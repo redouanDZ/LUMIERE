@@ -3,14 +3,34 @@ const router = express.Router();
 const { query, run } = require('../database/db');
 const { validateOrderInput, sanitizeString } = require('../middleware/validator');
 const { requireAdmin, getJwtSecret } = require('../middleware/auth');
+const { authLimiter, orderLimiter } = require('../middleware/rateLimiter');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+
+// Helper for safe error response
+const safeError = (res, err, defaultMsg) => {
+    console.error('[Route Error]:', err);
+    const msg = process.env.NODE_ENV === 'production' ? (defaultMsg || 'حدث خطأ في الخادم') : err.message;
+    return res.status(500).json({ success: false, message: msg });
+};
 
 // ==========================================
 // PUBLIC STORE APIS
 // ==========================================
 
 // GET Products
+
+// Public: Get Public Store Configuration & Branding
+router.get('/config', (req, res) => {
+    try {
+        const { getStoreConfig } = require('../config/store');
+        const config = getStoreConfig(req.headers['x-tenant-id'] || null);
+        res.json({ success: true, data: config });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to load configuration' });
+    }
+});
+
 router.get('/products', async (req, res) => {
     try {
         const { category } = req.query;
@@ -25,7 +45,7 @@ router.get('/products', async (req, res) => {
         const products = await query(sql, params);
         res.json({ success: true, count: products.length, data: products });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        safeError(res, err);
     }
 });
 
@@ -38,7 +58,7 @@ router.get('/products/:id', async (req, res) => {
         }
         res.json({ success: true, data: product[0] });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        safeError(res, err);
     }
 });
 
@@ -57,12 +77,12 @@ router.post('/coupons/validate', async (req, res) => {
             discountPercent: coupon.discount_percent
         });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        safeError(res, err);
     }
 });
 
 // Create Order
-router.post('/orders', validateOrderInput, async (req, res) => {
+router.post('/orders', orderLimiter, validateOrderInput, async (req, res) => {
     try {
         const { name, phone, country, city, address, paymentMethod, currency, items } = req.sanitizedOrder;
         const couponCode = sanitizeString(req.body.couponCode || '').toUpperCase();
@@ -120,12 +140,12 @@ router.post('/orders', validateOrderInput, async (req, res) => {
             message: 'Order created successfully'
         });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        safeError(res, err);
     }
 });
 
 // Admin Auth
-router.post('/auth/login', async (req, res) => {
+router.post('/auth/login', authLimiter, async (req, res) => {
     try {
         const { email, password } = req.body;
         const users = await query('SELECT * FROM users WHERE email = ?', [email]);
@@ -158,7 +178,7 @@ router.post('/auth/login', async (req, res) => {
             token
         });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        safeError(res, err);
     }
 });
 
@@ -208,7 +228,7 @@ router.get('/admin/stats', requireAdmin, async (req, res) => {
             }))
         });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        safeError(res, err);
     }
 });
 
@@ -219,7 +239,7 @@ router.get('/admin/coupons', requireAdmin, async (req, res) => {
         const coupons = await query('SELECT * FROM coupons ORDER BY id DESC');
         res.json({ success: true, data: coupons });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        safeError(res, err);
     }
 });
 
@@ -233,7 +253,7 @@ router.post('/admin/coupons', requireAdmin, async (req, res) => {
         await run('INSERT INTO coupons (code, discount_percent) VALUES (?, ?)', [cleanCode, percent]);
         res.status(201).json({ success: true, message: 'Coupon created successfully' });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        safeError(res, err);
     }
 });
 
@@ -246,7 +266,7 @@ router.patch('/admin/coupons/:id/toggle', requireAdmin, async (req, res) => {
         await run('UPDATE coupons SET is_active = ? WHERE id = ?', [newStatus, req.params.id]);
         res.json({ success: true, is_active: newStatus, message: 'Coupon status updated' });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        safeError(res, err);
     }
 });
 
@@ -256,7 +276,7 @@ router.delete('/admin/coupons/:id', requireAdmin, async (req, res) => {
         await run('DELETE FROM coupons WHERE id = ?', [req.params.id]);
         res.json({ success: true, message: 'Coupon deleted permanently' });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        safeError(res, err);
     }
 });
 
@@ -291,7 +311,7 @@ router.post('/admin/products', requireAdmin, async (req, res) => {
 
         res.status(201).json({ success: true, message: 'Product created successfully' });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        safeError(res, err);
     }
 });
 
@@ -306,7 +326,7 @@ router.patch('/admin/products/:id', requireAdmin, async (req, res) => {
         ]);
         res.json({ success: true, message: 'Product updated successfully' });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        safeError(res, err);
     }
 });
 
@@ -316,7 +336,7 @@ router.delete('/admin/products/:id', requireAdmin, async (req, res) => {
         await run('DELETE FROM products WHERE id = ?', [req.params.id]);
         res.json({ success: true, message: 'Product deleted permanently' });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        safeError(res, err);
     }
 });
 
@@ -333,7 +353,7 @@ router.patch('/admin/orders/:id/status', requireAdmin, async (req, res) => {
         await run('UPDATE orders SET status = ? WHERE id = ?', [status, req.params.id]);
         res.json({ success: true, message: 'Order status updated' });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        safeError(res, err);
     }
 });
 
@@ -343,7 +363,7 @@ router.delete('/admin/orders/:id', requireAdmin, async (req, res) => {
         await run('DELETE FROM orders WHERE id = ?', [req.params.id]);
         res.json({ success: true, message: 'Order deleted successfully' });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        safeError(res, err);
     }
 });
 
@@ -353,7 +373,7 @@ router.delete('/admin/orders/:id', requireAdmin, async (req, res) => {
 // ==========================================
 
 // Customer Register
-router.post('/customer/register', async (req, res) => {
+router.post('/customer/register', authLimiter, async (req, res) => {
     try {
         let { name, email, password, phone, country, city, address } = req.body;
         name = sanitizeString(name);
@@ -398,12 +418,12 @@ router.post('/customer/register', async (req, res) => {
             message: 'تم إنشاء الحساب بنجاح وتمت إضافة 100 نقطة ترحيبية 🎁'
         });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        safeError(res, err);
     }
 });
 
 // Customer Login
-router.post('/customer/login', async (req, res) => {
+router.post('/customer/login', authLimiter, async (req, res) => {
     try {
         let { email, password } = req.body;
         email = sanitizeString(email).toLowerCase();
@@ -447,7 +467,7 @@ router.post('/customer/login', async (req, res) => {
             token
         });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        safeError(res, err);
     }
 });
 
@@ -507,7 +527,7 @@ router.put('/customer/me', async (req, res) => {
 
         res.json({ success: true, message: 'تم تحديث البيانات بنجاح' });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        safeError(res, err);
     }
 });
 

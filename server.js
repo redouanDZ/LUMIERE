@@ -6,6 +6,8 @@ const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const { initSchema } = require('./src/database/db');
+const { apiLimiter } = require('./src/middleware/rateLimiter');
+const { errorHandler } = require('./src/middleware/errorHandler');
 const apiRoutes = require('./src/routes/api');
 
 const app = express();
@@ -21,12 +23,8 @@ app.use(cors({
 }));
 
 // Rate Limiter: 100 requests per 15 minutes
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 150,
-    message: { success: false, message: 'Too many requests, please try again later.' }
-});
-app.use('/api/', limiter);
+// Apply general API rate limiter
+app.use('/api/', apiLimiter);
 
 // Parsers
 app.use(express.json());
@@ -55,10 +53,14 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Initialize Database and Start Server
-initSchema().then(() => {
-    app.listen(PORT, () => {
-        console.log(`
+// Central Error Handler
+app.use(errorHandler);
+
+// Initialize Database and Start Server (only when run directly)
+if (require.main === module) {
+    initSchema().then(() => {
+        app.listen(PORT, () => {
+            console.log(`
         =====================================================
         ✨ LUMIÈRE BOTANICS PARIS — Full-Stack Server Running!
         📍 URL: http://localhost:${PORT}
@@ -66,7 +68,10 @@ initSchema().then(() => {
         🔐 API Endpoints: http://localhost:${PORT}/api/products
         =====================================================
         `);
+        });
+    }).catch(err => {
+        console.error('Failed to initialize database schema:', err);
     });
-}).catch(err => {
-    console.error('Failed to initialize database schema:', err);
-});
+}
+
+module.exports = app;
