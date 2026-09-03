@@ -57,13 +57,12 @@ router.post('/coupons/validate', async (req, res) => {
     }
 });
 
-// Public: Create Order with validation and stock calculation
+// Public: Create Order
 router.post('/orders', validateOrderInput, async (req, res) => {
     try {
         const { name, phone, country, city, address, paymentMethod, currency, items } = req.sanitizedOrder;
         const couponCode = sanitizeString(req.body.couponCode || '').toUpperCase();
 
-        // Calculate total from database to prevent price tampering
         let totalUsd = 0;
         const processedItems = [];
 
@@ -82,7 +81,6 @@ router.post('/orders', validateOrderInput, async (req, res) => {
             }
         }
 
-        // Apply coupon if valid
         let discount = 0;
         if (couponCode) {
             const coup = await query('SELECT * FROM coupons WHERE code = ? AND is_active = 1', [couponCode]);
@@ -122,7 +120,7 @@ router.post('/orders', validateOrderInput, async (req, res) => {
     }
 });
 
-// Admin Authentication: Login
+// Admin Auth: Login
 router.post('/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -166,25 +164,67 @@ router.post('/auth/logout', (req, res) => {
     res.json({ success: true, message: 'Logged out' });
 });
 
-// Protected Admin: Dashboard Stats & Recent Orders
+// Protected Admin: Enhanced Analytics & Dashboard Metrics
 router.get('/admin/stats', requireAdmin, async (req, res) => {
     try {
         const totalOrders = await query('SELECT COUNT(*) as count, SUM(total_usd) as totalRevenue FROM orders');
-        const ordersList = await query('SELECT * FROM orders ORDER BY id DESC LIMIT 20');
+        const ordersList = await query('SELECT * FROM orders ORDER BY id DESC LIMIT 50');
         const productsCount = await query('SELECT COUNT(*) as count FROM products');
+        const couponsCount = await query('SELECT COUNT(*) as count FROM coupons');
+
+        // Country distribution
+        const countryStats = await query(`
+            SELECT customer_country as country, COUNT(*) as count, SUM(total_usd) as revenue
+            FROM orders GROUP BY customer_country ORDER BY count DESC LIMIT 5
+        `);
+
+        // Recent customers
+        const customersList = await query(`
+            SELECT customer_name as name, customer_phone as phone, customer_city as city,
+                   customer_country as country, COUNT(*) as total_orders, SUM(total_usd) as total_spent,
+                   MAX(created_at) as last_order_date
+            FROM orders GROUP BY customer_phone ORDER BY total_spent DESC LIMIT 20
+        `);
 
         res.json({
             success: true,
             stats: {
                 totalOrders: totalOrders[0].count || 0,
                 totalRevenueUsd: Math.round(totalOrders[0].totalRevenue || 0),
-                totalProducts: productsCount[0].count || 0
+                totalRevenueSar: Math.round((totalOrders[0].totalRevenue || 0) * 3.75),
+                totalProducts: productsCount[0].count || 0,
+                totalCoupons: couponsCount[0].count || 0
             },
+            countryStats,
+            customers: customersList,
             recentOrders: ordersList.map(o => ({
                 ...o,
                 items: JSON.parse(o.items_json || '[]')
             }))
         });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Protected Admin: Manage Coupons (List & Create)
+router.get('/admin/coupons', requireAdmin, async (req, res) => {
+    try {
+        const coupons = await query('SELECT * FROM coupons ORDER BY id DESC');
+        res.json({ success: true, data: coupons });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+router.post('/admin/coupons', requireAdmin, async (req, res) => {
+    try {
+        const { code, discountPercent } = req.body;
+        const cleanCode = sanitizeString(code).toUpperCase();
+        const percent = Math.min(100, Math.max(1, parseInt(discountPercent) || 10));
+
+        await run('INSERT INTO coupons (code, discount_percent) VALUES (?, ?)', [cleanCode, percent]);
+        res.status(201).json({ success: true, message: 'Coupon created successfully' });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
@@ -201,6 +241,21 @@ router.patch('/admin/orders/:id/status', requireAdmin, async (req, res) => {
 
         await run('UPDATE orders SET status = ? WHERE id = ?', [status, req.params.id]);
         res.json({ success: true, message: 'Order status updated' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Protected Admin: Update Product Stock / Price
+router.patch('/admin/products/:id', requireAdmin, async (req, res) => {
+    try {
+        const { price_usd, stock } = req.body;
+        await run('UPDATE products SET price_usd = ?, stock = ? WHERE id = ?', [
+            parseFloat(price_usd),
+            parseInt(stock),
+            req.params.id
+        ]);
+        res.json({ success: true, message: 'Product updated successfully' });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }

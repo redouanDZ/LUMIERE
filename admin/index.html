@@ -3,177 +3,352 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LUMIÈRE Paris — Admin Operations Hub</title>
-    <link rel="stylesheet" href="../css/lumiere.css">
-    <style>
-        body { background: #1C1917; color: #FAF7F2; min-height: 100vh; padding: 24px; }
-        .admin-card { background: #292524; border: 1px solid rgba(197, 160, 89, 0.3); border-radius: 16px; padding: 24px; margin-bottom: 24px; }
-        .admin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
-        .stat-box { background: #322D29; border-radius: 12px; padding: 20px; border-inline-start: 4px solid var(--accent-gold); }
-        .stat-val { font-size: 2.2rem; font-weight: 700; color: #E7C885; }
-        table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 0.9rem; }
-        th, td { padding: 12px 14px; text-align: start; border-bottom: 1px solid #44403C; }
-        th { color: var(--accent-gold); font-weight: 600; }
-        .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; }
-        .status-pending { background: #FEF3C7; color: #92400E; }
-        .status-shipped { background: #DBEAFE; color: #1E40AF; }
-        .status-delivered { background: #D1FAE5; color: #065F46; }
-        .login-box { max-width: 400px; margin: 80px auto; background: #292524; padding: 36px; border-radius: 20px; border: 1px solid var(--accent-gold); }
-    </style>
+    <title>LUMIÈRE Paris — Luxury Operations Hub</title>
+    <link rel="stylesheet" href="css/admin.css">
+    <!-- Chart.js for interactive analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-    <!-- Login View (Hidden when logged in) -->
-    <div id="adminLoginSection" class="login-box">
-        <h2 class="serif-font" style="text-align: center; color: var(--accent-gold); font-size: 2rem; margin-bottom: 6px;">LUMIÈRE</h2>
-        <p style="text-align: center; font-size: 0.85rem; color: #A8A29E; margin-bottom: 24px;">لوحة التحكم الإدارية وإدارة الطلبات</p>
+    <!-- Admin Login Screen -->
+    <div id="loginScreen" style="position: fixed; inset: 0; background: #0C0B0A; z-index: 9999; display: flex; align-items: center; justify-content: center;">
+        <div style="background: #181614; border: 1px solid var(--gold); border-radius: 20px; padding: 45px; width: 100%; max-width: 440px; box-shadow: 0 25px 60px rgba(0,0,0,0.8); text-align: center;">
+            <h2 style="font-family: 'Cormorant Garamond', serif; font-size: 2.6rem; color: var(--gold-light); letter-spacing: 4px; margin-bottom: 4px;">LUMIÈRE</h2>
+            <div style="font-size: 0.75rem; color: var(--gold); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 24px;">Parisian Luxury Operations Hub</div>
+            
+            <form id="loginForm" style="text-align: start;">
+                <div class="form-group">
+                    <label>البريد الإلكتروني المعتمد</label>
+                    <input type="email" id="loginEmail" class="form-control" value="admin@lumiere-botanics.com" required>
+                </div>
+                <div class="form-group">
+                    <label>كلمة المرور المشفرة</label>
+                    <input type="password" id="loginPassword" class="form-control" value="lumiere2026!" required>
+                </div>
+                <button type="submit" class="btn-gold" style="width: 100%; justify-content: center; padding: 14px; font-size: 1rem; margin-top: 10px;">
+                    تسجيل الدخول للنظام 🔐
+                </button>
+            </form>
+            <div id="loginMsg" style="color: var(--danger); font-size: 0.88rem; margin-top: 16px;"></div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="admin-sidebar">
+        <div>
+            <div class="brand-logo">
+                <div class="brand-title">LUMIÈRE</div>
+                <span class="brand-badge">Admin Operations</span>
+            </div>
+
+            <ul class="nav-menu">
+                <li class="nav-item active" onclick="switchTab('overview')">
+                    <span class="nav-icon">📊</span>
+                    <span>لوحة التحليلات</span>
+                </li>
+                <li class="nav-item" onclick="switchTab('orders')">
+                    <span class="nav-icon">📦</span>
+                    <span>الطلبات والشحن</span>
+                </li>
+                <li class="nav-item" onclick="switchTab('products')">
+                    <span class="nav-icon">🧴</span>
+                    <span>المنتجات والمخزون</span>
+                </li>
+                <li class="nav-item" onclick="switchTab('coupons')">
+                    <span class="nav-icon">🎟️</span>
+                    <span>الكوبونات والخصومات</span>
+                </li>
+                <li class="nav-item" onclick="switchTab('customers')">
+                    <span class="nav-icon">👥</span>
+                    <span>قاعدة العملاء</span>
+                </li>
+            </ul>
+        </div>
+
+        <div>
+            <div class="sidebar-user">
+                <div class="user-info">
+                    <div class="user-avatar">AD</div>
+                    <div>
+                        <div style="font-weight: 700; font-size: 0.9rem; color: #fff;">المدير العام</div>
+                        <div style="font-size: 0.75rem; color: var(--gold);">Executive Admin</div>
+                    </div>
+                </div>
+                <button onclick="logoutAdmin()" class="btn-outline-gold" style="padding: 6px 12px; font-size: 0.8rem;">خروج</button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="admin-main">
         
-        <form id="adminLoginForm">
-            <div style="margin-bottom: 16px;">
-                <label style="font-size: 0.85rem;">البريد الإلكتروني الإداري</label>
-                <input type="email" id="adminEmail" class="form-input" style="background: #1C1917; color: #fff; border-color: #57534E;" value="admin@lumiere-botanics.com" required>
+        <!-- Top Bar -->
+        <header class="top-bar">
+            <div class="page-heading">
+                <h1 id="tabHeading">نظرة عامة والتحليلات الحية</h1>
+                <p id="tabSubHeading">مؤشرات الأداء، التدفق المالي الخليجي والدولي، وحركة الطلبيات</p>
             </div>
-            <div style="margin-bottom: 24px;">
-                <label style="font-size: 0.85rem;">كلمة المرور</label>
-                <input type="password" id="adminPassword" class="form-input" style="background: #1C1917; color: #fff; border-color: #57534E;" value="lumiere2026!" required>
+
+            <div class="top-actions">
+                <div class="live-indicator">
+                    <span class="pulse-dot"></span>
+                    <span>المتجر متصل ومحمي (Live)</span>
+                </div>
+                <a href="/" target="_blank" class="btn-outline-gold">عرض المتجر ↗</a>
             </div>
-            <button type="submit" class="btn-luxury" style="width: 100%; justify-content: center; background: var(--accent-gold); color: #1C1917;">
-                تسجيل الدخول للنظام 🔐
-            </button>
-        </form>
-        <div id="loginError" style="color: #EF4444; font-size: 0.85rem; margin-top: 14px; text-align: center;"></div>
-    </div>
+        </header>
 
-    <!-- Dashboard View -->
-    <div id="adminDashboardSection" style="display: none; max-width: 1280px; margin: 0 auto;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-            <div>
-                <h1 class="serif-font" style="font-size: 2.2rem; color: var(--accent-gold);">LUMIÈRE PARIS — لوحة إدارة العمليات</h1>
-                <p style="color: #A8A29E; font-size: 0.9rem;">إدارة الطلبات، المبيعات الخليجية، والمخزون</p>
+        <!-- TAB 1: OVERVIEW & ANALYTICS -->
+        <div id="tab-overview" class="tab-content active">
+            <!-- Metrics Row -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-title">إجمالي المبيعات (SAR)</div>
+                    <div id="metricRevenueSar" class="metric-value">0 ر.س</div>
+                    <div id="metricRevenueUsd" class="metric-sub">يعادل $0 USD</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-title">عدد الطلبات الناجحة</div>
+                    <div id="metricOrders" class="metric-value">0</div>
+                    <div class="metric-sub">معدل تحويل قياسي 4.8%</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-title">المستحضرات الفعالة</div>
+                    <div id="metricProducts" class="metric-value">6</div>
+                    <div class="metric-sub">جميعها متوفرة بالمخزون</div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-title">الكوبونات النشطة</div>
+                    <div id="metricCoupons" class="metric-value">2</div>
+                    <div class="metric-sub">كود GLOW10 فعال</div>
+                </div>
             </div>
-            <button onclick="logoutAdmin()" class="btn-outline" style="border-color: #A8A29E; color: #A8A29E; padding: 8px 20px;">خروج</button>
-        </div>
 
-        <div class="admin-grid">
-            <div class="stat-box">
-                <div style="color: #A8A29E; font-size: 0.85rem;">إجمالي المبيعات (USD)</div>
-                <div id="statRevenue" class="stat-val">$0</div>
+            <!-- Charts Grid -->
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 35px;">
+                <div class="section-card" style="margin-bottom: 0;">
+                    <div class="section-header">
+                        <div class="section-title">منحنى المبيعات الأسبوعي</div>
+                        <span style="font-size: 0.8rem; color: var(--gold);">تحديث لحظي</span>
+                    </div>
+                    <div style="height: 260px;">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="section-card" style="margin-bottom: 0;">
+                    <div class="section-header">
+                        <div class="section-title">المبيعات جغرافياً</div>
+                    </div>
+                    <div style="height: 260px;">
+                        <canvas id="countryChart"></canvas>
+                    </div>
+                </div>
             </div>
-            <div class="stat-box">
-                <div style="color: #A8A29E; font-size: 0.85rem;">عدد الطلبات الكلي</div>
-                <div id="statOrders" class="stat-val">0</div>
-            </div>
-            <div class="stat-box">
-                <div style="color: #A8A29E; font-size: 0.85rem;">المستحضرات النشطة</div>
-                <div id="statProducts" class="stat-val">6</div>
-            </div>
-        </div>
 
-        <div class="admin-card">
-            <h3 class="serif-font" style="font-size: 1.5rem; color: #E7C885;">قائمة الطلبات الحديثة (Orders Stream)</h3>
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>رقم الطلب</th>
-                            <th>الزبونة</th>
-                            <th>الجوال</th>
-                            <th>الدولة / المدينة</th>
-                            <th>المبلغ</th>
-                            <th>الحالة</th>
-                            <th>إجراء</th>
-                        </tr>
-                    </thead>
-                    <tbody id="ordersTableBody">
-                        <tr><td colspan="7" style="text-align: center; color: #888;">جاري تحميل البيانات...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const API_URL = '/api';
-
-        document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('adminEmail').value;
-            const password = document.getElementById('adminPassword').value;
-
-            try {
-                const res = await fetch(`${API_URL}/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    showDashboard();
-                    loadStats();
-                } else {
-                    document.getElementById('loginError').textContent = data.message;
-                }
-            } catch (err) {
-                document.getElementById('loginError').textContent = 'فشل الاتصال بالخادم';
-            }
-        });
-
-        async function loadStats() {
-            try {
-                const res = await fetch(`${API_URL}/admin/stats`);
-                const data = await res.json();
-                if (data.success) {
-                    document.getElementById('statRevenue').textContent = '$' + data.stats.totalRevenueUsd;
-                    document.getElementById('statOrders').textContent = data.stats.totalOrders;
-                    document.getElementById('statProducts').textContent = data.stats.totalProducts;
-
-                    const tbody = document.getElementById('ordersTableBody');
-                    if (data.recentOrders.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 30px;">لا توجد طلبات بعد. الطلبات الجديدة ستظهر هنا فوراً.</td></tr>';
-                    } else {
-                        tbody.innerHTML = data.recentOrders.map(o => `
+            <!-- Recent Orders Preview -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div class="section-title">أحدث الطلبيات المستلمة</div>
+                    <button onclick="switchTab('orders')" class="btn-outline-gold">عرض جميع الطلبات ➔</button>
+                </div>
+                <div class="luxury-table-wrapper">
+                    <table class="luxury-table">
+                        <thead>
                             <tr>
-                                <td style="font-weight: 700; color: #E7C885;">${o.order_number}</td>
-                                <td>${o.customer_name}</td>
-                                <td>${o.customer_phone}</td>
-                                <td>${o.customer_country} - ${o.customer_city}</td>
-                                <td>${o.total_local} ${o.currency}</td>
-                                <td><span class="status-badge status-${o.status}">${o.status}</span></td>
-                                <td>
-                                    <select onchange="updateOrderStatus(${o.id}, this.value)" style="background: #1C1917; color: #fff; border: 1px solid #555; padding: 4px 8px; border-radius: 6px;">
-                                        <option value="pending" ${o.status === 'pending' ? 'selected' : ''}>قيد المعالجة</option>
-                                        <option value="shipped" ${o.status === 'shipped' ? 'selected' : ''}>تم الشحن</option>
-                                        <option value="delivered" ${o.status === 'delivered' ? 'selected' : ''}>تم التسليم</option>
-                                        <option value="cancelled" ${o.status === 'cancelled' ? 'selected' : ''}>إلغاء</option>
-                                    </select>
-                                </td>
+                                <th>رقم الطلب</th>
+                                <th>العميل</th>
+                                <th>الدولة والمدينة</th>
+                                <th>المبلغ</th>
+                                <th>طريقة الدفع</th>
+                                <th>الحالة</th>
                             </tr>
-                        `).join('');
-                    }
-                }
-            } catch (err) {
-                console.error(err);
-            }
-        }
+                        </thead>
+                        <tbody id="overviewOrdersBody">
+                            <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">جاري الاتصال بقاعدة البيانات...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
 
-        async function updateOrderStatus(orderId, newStatus) {
-            await fetch(`${API_URL}/admin/orders/${orderId}/status`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: newStatus })
-            });
-            loadStats();
-        }
+        <!-- TAB 2: ORDERS MANAGEMENT -->
+        <div id="tab-orders" class="tab-content">
+            <div class="section-card">
+                <div class="section-header">
+                    <div>
+                        <div class="section-title">إدارة وتتبع الطلبيات والشحن</div>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">تحديث فوري لحالات الشحن مع إمكانية تصدير البيانات والتواصل بواتساب</p>
+                    </div>
+                    <div style="display: flex; gap: 12px;">
+                        <button onclick="exportOrdersCSV()" class="btn-outline-gold">تصدير لشركات الشحن (CSV) 📄</button>
+                    </div>
+                </div>
 
-        function showDashboard() {
-            document.getElementById('adminLoginSection').style.display = 'none';
-            document.getElementById('adminDashboardSection').style.display = 'block';
-        }
+                <div class="luxury-table-wrapper">
+                    <table class="luxury-table">
+                        <thead>
+                            <tr>
+                                <th>رقم الطلب</th>
+                                <th>الزبونة</th>
+                                <th>الجوال</th>
+                                <th>العنوان التفصيلي</th>
+                                <th>المنتجات</th>
+                                <th>الإجمالي</th>
+                                <th>حالة الشحن</th>
+                                <th>تواصل</th>
+                            </tr>
+                        </thead>
+                        <tbody id="allOrdersBody">
+                            <tr><td colspan="8" style="text-align: center;">جاري التحميل...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
 
-        async function logoutAdmin() {
-            await fetch(`${API_URL}/auth/logout`, { method: 'POST' });
-            location.reload();
-        }
-    </script>
+        <!-- TAB 3: PRODUCTS & INVENTORY -->
+        <div id="tab-products" class="tab-content">
+            <div class="section-card">
+                <div class="section-header">
+                    <div>
+                        <div class="section-title">كتالوج المستحضرات والأسعار والمخزون</div>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">تعديل فوري للأسعار والكميات المتاحة في قاعدة البيانات</p>
+                    </div>
+                </div>
+
+                <div class="luxury-table-wrapper">
+                    <table class="luxury-table">
+                        <thead>
+                            <tr>
+                                <th>المستحضر</th>
+                                <th>التصنيف</th>
+                                <th>السعر الأساسي (USD)</th>
+                                <th>السعر المعادل (SAR)</th>
+                                <th>المخزون المتوفر</th>
+                                <th>التقييم</th>
+                                <th>إجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsTableBody">
+                            <tr><td colspan="7" style="text-align: center;">جاري جلب المنتجات...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: COUPONS -->
+        <div id="tab-coupons" class="tab-content">
+            <div class="section-card">
+                <div class="section-header">
+                    <div>
+                        <div class="section-title">إدارة قسائم الخصم الترويجية</div>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">إنشاء وتتبع استخدام كوبونات الخصم للمشاهير والحملات الإعلانية</p>
+                    </div>
+                    <button onclick="openNewCouponModal()" class="btn-gold">+ إضافة كوبون جديد</button>
+                </div>
+
+                <div class="luxury-table-wrapper">
+                    <table class="luxury-table">
+                        <thead>
+                            <tr>
+                                <th>كود الكوبون</th>
+                                <th>نسبة الخصم</th>
+                                <th>عدد مرات الاستخدام</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="couponsTableBody">
+                            <tr><td colspan="4" style="text-align: center;">جاري تحميل الكوبونات...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: CUSTOMERS -->
+        <div id="tab-customers" class="tab-content">
+            <div class="section-card">
+                <div class="section-header">
+                    <div>
+                        <div class="section-title">سجل الزبائن وقاعدة البيانات (CRM)</div>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">قائمة العميلات الأكثر إنفاقاً وتكراراً للشراء لإعادة استهدافهن</p>
+                    </div>
+                </div>
+
+                <div class="luxury-table-wrapper">
+                    <table class="luxury-table">
+                        <thead>
+                            <tr>
+                                <th>اسم العميل</th>
+                                <th>رقم الهاتف</th>
+                                <th>الدولة / المدينة</th>
+                                <th>عدد الطلبات</th>
+                                <th>إجمالي المشتريات</th>
+                                <th>آخر طلب</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customersTableBody">
+                            <tr><td colspan="6" style="text-align: center;">جاري التحميل...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- New Coupon Modal -->
+    <div id="couponModal" class="modal-overlay">
+        <div class="modal-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h3 class="section-title">إنشاء كوبون خصم جديد</h3>
+                <button onclick="closeNewCouponModal()" style="background:none; border:none; color:var(--text-secondary); font-size:1.5rem; cursor:pointer;">✕</button>
+            </div>
+            <form id="newCouponForm">
+                <div class="form-group">
+                    <label>رمز الكوبون (مثلاً: VIP20 أو RAMADAN)</label>
+                    <input type="text" id="couponCodeInput" class="form-control" placeholder="SUMMER15" required style="text-transform:uppercase;">
+                </div>
+                <div class="form-group">
+                    <label>نسبة الخصم المئوية (%)</label>
+                    <input type="number" id="couponPercentInput" class="form-control" min="1" max="90" value="15" required>
+                </div>
+                <button type="submit" class="btn-gold" style="width: 100%; justify-content: center; padding: 12px;">حفظ وتفعيل الكوبون فوراً 🎟️</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Product Modal -->
+    <div id="productModal" class="modal-overlay">
+        <div class="modal-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h3 class="section-title">تعديل سعر ومخزون المستحضر</h3>
+                <button onclick="closeProductModal()" style="background:none; border:none; color:var(--text-secondary); font-size:1.5rem; cursor:pointer;">✕</button>
+            </div>
+            <form id="editProductForm">
+                <input type="hidden" id="editProductId">
+                <div class="form-group">
+                    <label>اسم المستحضر</label>
+                    <input type="text" id="editProductTitle" class="form-control" readonly style="opacity: 0.7;">
+                </div>
+                <div class="form-group">
+                    <label>السعر بالدولار (USD)</label>
+                    <input type="number" id="editProductPrice" class="form-control" step="0.5" required>
+                </div>
+                <div class="form-group">
+                    <label>الكمية المتوفرة بالمخزون</label>
+                    <input type="number" id="editProductStock" class="form-control" required>
+                </div>
+                <button type="submit" class="btn-gold" style="width: 100%; justify-content: center; padding: 12px;">حفظ التعديلات في قاعدة البيانات 💾</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/admin.js"></script>
 </body>
 </html>
