@@ -10,7 +10,6 @@ function switchTab(tabId) {
     const targetTab = document.getElementById('tab-' + tabId);
     if (targetTab) targetTab.classList.add('active');
 
-    // Find nav item
     const navItems = document.querySelectorAll('.nav-item');
     const tabMap = { 'overview': 0, 'orders': 1, 'products': 2, 'coupons': 3, 'customers': 4 };
     if (navItems[tabMap[tabId]]) navItems[tabMap[tabId]].classList.add('active');
@@ -18,8 +17,8 @@ function switchTab(tabId) {
     const titles = {
         'overview': { h: 'نظرة عامة والتحليلات الحية', sub: 'مؤشرات الأداء، التدفق المالي الخليجي والدولي، وحركة الطلبيات' },
         'orders': { h: 'إدارة وتتبع الطلبيات والشحن', sub: 'تحديث حالات الطلبيات والتواصل مع العميلات وتصدير البيانات' },
-        'products': { h: 'كتالوج المستحضرات والأسعار', sub: 'تعديل أسعار المنتجات والكميات المتاحة في قاعدة البيانات' },
-        'coupons': { h: 'إدارة قسائم الخصم والعروض', sub: 'إنشاء كوبونات مخصصة للمؤثرين والحملات ومتابعة استخدامها' },
+        'products': { h: 'كتالوج المستحضرات والأسعار', sub: 'إضافة وتعديل وحذف المنتجات في قاعدة البيانات' },
+        'coupons': { h: 'إدارة قسائم الخصم والعروض (CRUD)', sub: 'إنشاء وتفعيل وتعطيل وحذف الكوبونات نهائياً' },
         'customers': { h: 'قاعدة بيانات العميلات (CRM)', sub: 'سجل العميلات الأكثر ولاءً ومشترياتهن وتفاصيل التواصل' }
     };
 
@@ -29,7 +28,7 @@ function switchTab(tabId) {
     }
 }
 
-// Login
+// Login & Auth
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = document.getElementById('loginEmail').value;
@@ -53,13 +52,11 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     }
 });
 
-// Logout
 async function logoutAdmin() {
     await fetch('/api/auth/logout', { method: 'POST' });
     location.reload();
 }
 
-// Initial Data Fetch
 async function initDashboard() {
     await loadAllData();
     loadProducts();
@@ -112,7 +109,7 @@ function renderOverview(data) {
 function renderOrders(orders) {
     const tbody = document.getElementById('allOrdersBody');
     if (!orders || orders.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 30px;">لا توجد طلبات مسجلة بعد</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding: 30px;">لا توجد طلبات مسجلة بعد</td></tr>';
         return;
     }
 
@@ -126,7 +123,7 @@ function renderOrders(orders) {
                 <td style="font-weight:700; color:var(--gold-light);">${o.order_number}</td>
                 <td>${o.customer_name}</td>
                 <td style="direction:ltr; text-align:right;">${o.customer_phone}</td>
-                <td>${o.customer_country}، ${o.customer_city} - ${o.customer_address}</td>
+                <td>${o.customer_country}، ${o.customer_city}</td>
                 <td style="font-size:0.82rem; color:var(--text-secondary); max-width: 220px;">${itemsList}</td>
                 <td style="font-weight:700; color:var(--gold-light);">${o.total_local} ${o.currency}</td>
                 <td>
@@ -142,9 +139,25 @@ function renderOrders(orders) {
                         واتساب 💬
                     </a>
                 </td>
+                <td>
+                    <button onclick="deleteOrder(${o.id})" class="btn-delete" title="حذف الطلب">🗑️</button>
+                </td>
             </tr>
         `;
     }).join('');
+}
+
+async function deleteOrder(orderId) {
+    if (!confirm('هل أنت متأكد من رغبتك في حذف هذا الطلب نهائياً من السجلات؟')) return;
+    try {
+        const res = await fetch(`/api/admin/orders/${orderId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+            loadAllData();
+        }
+    } catch (err) {
+        alert('فشل حذف الطلب');
+    }
 }
 
 async function updateOrderStatus(orderId, status) {
@@ -160,6 +173,9 @@ async function updateOrderStatus(orderId, status) {
     }
 }
 
+// ==========================================
+// PRODUCTS CRUD
+// ==========================================
 async function loadProducts() {
     try {
         const res = await fetch('/api/products');
@@ -180,8 +196,9 @@ async function loadProducts() {
                     <td style="color:var(--gold-light);">${Math.round(p.price_usd * 3.75)} SAR</td>
                     <td><span class="badge" style="background:rgba(16,185,129,0.15); color:#34D399;">${p.stock} قطعة</span></td>
                     <td>⭐ ${p.rating} (${p.reviews_count})</td>
-                    <td>
-                        <button onclick="openProductModal('${p.id}', '${p.title_ar}', ${p.price_usd}, ${p.stock})" class="btn-outline-gold" style="padding:4px 12px; font-size:0.8rem;">تعديل</button>
+                    <td style="display:flex; gap:8px;">
+                        <button onclick="openProductModal('${p.id}', '${p.title_ar}', ${p.price_usd}, ${p.stock})" class="btn-outline-gold" style="padding:4px 10px; font-size:0.8rem;">تعديل</button>
+                        <button onclick="deleteProduct('${p.id}')" class="btn-delete" title="حذف المستحضر">🗑️</button>
                     </td>
                 </tr>
             `).join('');
@@ -191,6 +208,55 @@ async function loadProducts() {
     }
 }
 
+async function deleteProduct(productId) {
+    if (!confirm('هل أنت متأكد من حذف هذا المنتج نهائياً من المتجر وقاعدة البيانات؟')) return;
+    try {
+        const res = await fetch(`/api/admin/products/${productId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+            loadProducts();
+            loadAllData();
+        }
+    } catch (err) {
+        alert('فشل حذف المنتج');
+    }
+}
+
+function openNewProductModal() { document.getElementById('newProductModal').classList.add('active'); }
+function closeNewProductModal() { document.getElementById('newProductModal').classList.remove('active'); }
+
+document.getElementById('newProductForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const title_ar = document.getElementById('npTitleAr').value;
+    const categoryKey = document.getElementById('npCategoryKey').value;
+    const price_usd = document.getElementById('npPriceUsd').value;
+    const stock = document.getElementById('npStock').value;
+    const desc_ar = document.getElementById('npDescAr').value;
+
+    const res = await fetch('/api/admin/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            title_ar,
+            title_en: title_ar,
+            categoryKey,
+            price_usd,
+            stock,
+            desc_ar,
+            category_ar: categoryKey === 'serums' ? 'سيرومات' : categoryKey === 'creams' ? 'كريمات' : 'تنظيف وأقنعة'
+        })
+    });
+    const data = await res.json();
+    if (data.success) {
+        closeNewProductModal();
+        loadProducts();
+        loadAllData();
+    }
+});
+
+// ==========================================
+// COUPONS CRUD (CREATE, READ, TOGGLE, DELETE)
+// ==========================================
 async function loadCoupons() {
     try {
         const res = await fetch('/api/admin/coupons');
@@ -199,10 +265,24 @@ async function loadCoupons() {
             const tbody = document.getElementById('couponsTableBody');
             tbody.innerHTML = data.data.map(c => `
                 <tr>
-                    <td style="font-weight:700; color:var(--gold-light); font-family:'Outfit';">${c.code}</td>
+                    <td style="font-weight:700; color:var(--gold-light); font-family:'Outfit'; font-size:1.1rem;">${c.code}</td>
                     <td><span class="badge" style="background:rgba(197,160,89,0.15); color:var(--gold-light);">خصم ${c.discount_percent}%</span></td>
                     <td>${c.used_count || 0} استخدام</td>
-                    <td><span class="badge badge-delivered">نشط ومفعل</span></td>
+                    <td>
+                        <span class="badge ${c.is_active ? 'badge-delivered' : 'badge-cancelled'}">
+                            ${c.is_active ? 'نشط ومفعل ✓' : 'معطل ✕'}
+                        </span>
+                    </td>
+                    <td>
+                        <button onclick="toggleCoupon(${c.id})" class="${c.is_active ? 'btn-toggle-inactive' : 'btn-toggle-active'}">
+                            ${c.is_active ? 'تعطيل ⏸️' : 'تفعيل ▶️'}
+                        </button>
+                    </td>
+                    <td>
+                        <button onclick="deleteCoupon(${c.id}, '${c.code}')" class="btn-delete" title="حذف الكوبون نهائياً">
+                            حذف 🗑️
+                        </button>
+                    </td>
                 </tr>
             `).join('');
         }
@@ -210,6 +290,86 @@ async function loadCoupons() {
         console.error(err);
     }
 }
+
+// DELETE COUPON
+async function deleteCoupon(couponId, code) {
+    if (!confirm(`هل أنت متأكد من رغبتك في حذف الكوبون [${code}] نهائياً؟ لن يتمكن أي عميل من استخدامه بعد الآن.`)) return;
+
+    try {
+        const res = await fetch(`/api/admin/coupons/${couponId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+            loadCoupons();
+            loadAllData();
+        } else {
+            alert(data.message || 'فشل حذف الكوبون');
+        }
+    } catch (err) {
+        alert('حدث خطأ أثناء الاتصال بالخادم');
+    }
+}
+
+// TOGGLE COUPON
+async function toggleCoupon(couponId) {
+    try {
+        const res = await fetch(`/api/admin/coupons/${couponId}/toggle`, { method: 'PATCH' });
+        const data = await res.json();
+        if (data.success) {
+            loadCoupons();
+        }
+    } catch (err) {
+        alert('فشل تعديل حالة الكوبون');
+    }
+}
+
+function openNewCouponModal() { document.getElementById('couponModal').classList.add('active'); }
+function closeNewCouponModal() { document.getElementById('couponModal').classList.remove('active'); }
+
+document.getElementById('newCouponForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const code = document.getElementById('couponCodeInput').value;
+    const discountPercent = document.getElementById('couponPercentInput').value;
+
+    const res = await fetch('/api/admin/coupons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, discountPercent })
+    });
+    const data = await res.json();
+    if (data.success) {
+        closeNewCouponModal();
+        loadCoupons();
+        loadAllData();
+    }
+});
+
+// Edit Product Modal
+function openProductModal(id, title, price, stock) {
+    document.getElementById('editProductId').value = id;
+    document.getElementById('editProductTitle').value = title;
+    document.getElementById('editProductPrice').value = price;
+    document.getElementById('editProductStock').value = stock;
+    document.getElementById('productModal').classList.add('active');
+}
+function closeProductModal() { document.getElementById('productModal').classList.remove('active'); }
+
+document.getElementById('editProductForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('editProductId').value;
+    const price_usd = document.getElementById('editProductPrice').value;
+    const stock = document.getElementById('editProductStock').value;
+
+    const res = await fetch(`/api/admin/products/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ price_usd, stock })
+    });
+    const data = await res.json();
+    if (data.success) {
+        closeProductModal();
+        loadProducts();
+    }
+});
 
 function renderCustomers(customers) {
     const tbody = document.getElementById('customersTableBody');
@@ -230,7 +390,6 @@ function renderCustomers(customers) {
     `).join('');
 }
 
-// Charts Initialization
 function initCharts(data) {
     if (revenueChart) revenueChart.destroy();
     if (countryChart) countryChart.destroy();
@@ -292,55 +451,6 @@ function getStatusLabel(s) {
     return map[s] || s;
 }
 
-// Modals
-function openNewCouponModal() { document.getElementById('couponModal').classList.add('active'); }
-function closeNewCouponModal() { document.getElementById('couponModal').classList.remove('active'); }
-
-document.getElementById('newCouponForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const code = document.getElementById('couponCodeInput').value;
-    const discountPercent = document.getElementById('couponPercentInput').value;
-
-    const res = await fetch('/api/admin/coupons', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, discountPercent })
-    });
-    const data = await res.json();
-    if (data.success) {
-        closeNewCouponModal();
-        loadCoupons();
-    }
-});
-
-function openProductModal(id, title, price, stock) {
-    document.getElementById('editProductId').value = id;
-    document.getElementById('editProductTitle').value = title;
-    document.getElementById('editProductPrice').value = price;
-    document.getElementById('editProductStock').value = stock;
-    document.getElementById('productModal').classList.add('active');
-}
-function closeProductModal() { document.getElementById('productModal').classList.remove('active'); }
-
-document.getElementById('editProductForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const id = document.getElementById('editProductId').value;
-    const price_usd = document.getElementById('editProductPrice').value;
-    const stock = document.getElementById('editProductStock').value;
-
-    const res = await fetch(`/api/admin/products/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ price_usd, stock })
-    });
-    const data = await res.json();
-    if (data.success) {
-        closeProductModal();
-        loadProducts();
-    }
-});
-
-// CSV Export
 function exportOrdersCSV() {
     if (!cachedData || !cachedData.recentOrders) return alert('لا توجد بيانات للتصدير');
     let csv = 'OrderNumber,CustomerName,Phone,Country,City,Address,TotalUSD,TotalLocal,Currency,Status\n';
@@ -355,5 +465,4 @@ function exportOrdersCSV() {
     link.click();
 }
 
-// Auto init if session exists
 initDashboard();

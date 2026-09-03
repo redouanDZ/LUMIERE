@@ -5,8 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LUMIÈRE Paris — Luxury Operations Hub</title>
     <link rel="stylesheet" href="css/admin.css">
-    <!-- Chart.js for interactive analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .btn-delete {
+            background: rgba(239, 68, 68, 0.15);
+            color: #F87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 5px 10px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 0.82rem;
+            transition: var(--transition);
+        }
+        .btn-delete:hover {
+            background: #EF4444;
+            color: #fff;
+        }
+        .btn-toggle-active {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34D399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 4px 8px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+        .btn-toggle-inactive {
+            background: rgba(156, 163, 175, 0.15);
+            color: #9CA3AF;
+            border: 1px solid rgba(156, 163, 175, 0.3);
+            padding: 4px 8px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+    </style>
 </head>
 <body>
 
@@ -38,7 +71,7 @@
         <div>
             <div class="brand-logo">
                 <div class="brand-title">LUMIÈRE</div>
-                <span class="brand-badge">Admin Operations</span>
+                <span class="brand-badge">CRUD Operations</span>
             </div>
 
             <ul class="nav-menu">
@@ -100,34 +133,29 @@
 
         <!-- TAB 1: OVERVIEW & ANALYTICS -->
         <div id="tab-overview" class="tab-content active">
-            <!-- Metrics Row -->
             <div class="metrics-grid">
                 <div class="metric-card">
                     <div class="metric-title">إجمالي المبيعات (SAR)</div>
                     <div id="metricRevenueSar" class="metric-value">0 ر.س</div>
                     <div id="metricRevenueUsd" class="metric-sub">يعادل $0 USD</div>
                 </div>
-
                 <div class="metric-card">
                     <div class="metric-title">عدد الطلبات الناجحة</div>
                     <div id="metricOrders" class="metric-value">0</div>
                     <div class="metric-sub">معدل تحويل قياسي 4.8%</div>
                 </div>
-
                 <div class="metric-card">
                     <div class="metric-title">المستحضرات الفعالة</div>
                     <div id="metricProducts" class="metric-value">6</div>
-                    <div class="metric-sub">جميعها متوفرة بالمخزون</div>
+                    <div class="metric-sub">متوفرة في المخزن</div>
                 </div>
-
                 <div class="metric-card">
                     <div class="metric-title">الكوبونات النشطة</div>
-                    <div id="metricCoupons" class="metric-value">2</div>
-                    <div class="metric-sub">كود GLOW10 فعال</div>
+                    <div id="metricCoupons" class="metric-value">0</div>
+                    <div class="metric-sub">جاهزة للاستخدام</div>
                 </div>
             </div>
 
-            <!-- Charts Grid -->
             <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 35px;">
                 <div class="section-card" style="margin-bottom: 0;">
                     <div class="section-header">
@@ -138,7 +166,6 @@
                         <canvas id="revenueChart"></canvas>
                     </div>
                 </div>
-
                 <div class="section-card" style="margin-bottom: 0;">
                     <div class="section-header">
                         <div class="section-title">المبيعات جغرافياً</div>
@@ -149,7 +176,6 @@
                 </div>
             </div>
 
-            <!-- Recent Orders Preview -->
             <div class="section-card">
                 <div class="section-header">
                     <div class="section-title">أحدث الطلبيات المستلمة</div>
@@ -181,7 +207,7 @@
                 <div class="section-header">
                     <div>
                         <div class="section-title">إدارة وتتبع الطلبيات والشحن</div>
-                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">تحديث فوري لحالات الشحن مع إمكانية تصدير البيانات والتواصل بواتساب</p>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">تحديث حالات الشحن، التواصل مع الزبائن، أو حذف الطلبات التجريبية</p>
                     </div>
                     <div style="display: flex; gap: 12px;">
                         <button onclick="exportOrdersCSV()" class="btn-outline-gold">تصدير لشركات الشحن (CSV) 📄</button>
@@ -200,10 +226,11 @@
                                 <th>الإجمالي</th>
                                 <th>حالة الشحن</th>
                                 <th>تواصل</th>
+                                <th>حذف</th>
                             </tr>
                         </thead>
                         <tbody id="allOrdersBody">
-                            <tr><td colspan="8" style="text-align: center;">جاري التحميل...</td></tr>
+                            <tr><td colspan="9" style="text-align: center;">جاري التحميل...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -216,8 +243,9 @@
                 <div class="section-header">
                     <div>
                         <div class="section-title">كتالوج المستحضرات والأسعار والمخزون</div>
-                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">تعديل فوري للأسعار والكميات المتاحة في قاعدة البيانات</p>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">إضافة، تعديل، أو حذف المنتجات من قاعدة البيانات</p>
                     </div>
+                    <button onclick="openNewProductModal()" class="btn-gold">+ إضافة منتج فاخر جديد 🧴</button>
                 </div>
 
                 <div class="luxury-table-wrapper">
@@ -230,7 +258,7 @@
                                 <th>السعر المعادل (SAR)</th>
                                 <th>المخزون المتوفر</th>
                                 <th>التقييم</th>
-                                <th>إجراء</th>
+                                <th>إجراءات</th>
                             </tr>
                         </thead>
                         <tbody id="productsTableBody">
@@ -241,15 +269,15 @@
             </div>
         </div>
 
-        <!-- TAB 4: COUPONS -->
+        <!-- TAB 4: COUPONS CRUD -->
         <div id="tab-coupons" class="tab-content">
             <div class="section-card">
                 <div class="section-header">
                     <div>
-                        <div class="section-title">إدارة قسائم الخصم الترويجية</div>
-                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">إنشاء وتتبع استخدام كوبونات الخصم للمشاهير والحملات الإعلانية</p>
+                        <div class="section-title">إدارة قسائم الخصم الترويجية (Coupons CRUD)</div>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">إنشاء، تفعيل، تعطيل، أو حذف الكوبونات نهائياً من قاعدة البيانات</p>
                     </div>
-                    <button onclick="openNewCouponModal()" class="btn-gold">+ إضافة كوبون جديد</button>
+                    <button onclick="openNewCouponModal()" class="btn-gold">+ إضافة كوبون جديد 🎟️</button>
                 </div>
 
                 <div class="luxury-table-wrapper">
@@ -258,12 +286,14 @@
                             <tr>
                                 <th>كود الكوبون</th>
                                 <th>نسبة الخصم</th>
-                                <th>عدد مرات الاستخدام</th>
+                                <th>مرات الاستخدام</th>
                                 <th>الحالة</th>
+                                <th>تفعيل / تعطيل</th>
+                                <th>حذف نهائي</th>
                             </tr>
                         </thead>
                         <tbody id="couponsTableBody">
-                            <tr><td colspan="4" style="text-align: center;">جاري تحميل الكوبونات...</td></tr>
+                            <tr><td colspan="6" style="text-align: center;">جاري تحميل الكوبونات...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -276,7 +306,7 @@
                 <div class="section-header">
                     <div>
                         <div class="section-title">سجل الزبائن وقاعدة البيانات (CRM)</div>
-                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">قائمة العميلات الأكثر إنفاقاً وتكراراً للشراء لإعادة استهدافهن</p>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">العميلات الأكثر إنفاقاً وتكراراً للشراء</p>
                     </div>
                 </div>
 
@@ -318,7 +348,7 @@
                     <label>نسبة الخصم المئوية (%)</label>
                     <input type="number" id="couponPercentInput" class="form-control" min="1" max="90" value="15" required>
                 </div>
-                <button type="submit" class="btn-gold" style="width: 100%; justify-content: center; padding: 12px;">حفظ وتفعيل الكوبون فوراً 🎟️</button>
+                <button type="submit" class="btn-gold" style="width: 100%; justify-content: center; padding: 12px;">حفظ وتفعيل الكوبون في قاعدة البيانات 🎟️</button>
             </form>
         </div>
     </div>
@@ -345,6 +375,45 @@
                     <input type="number" id="editProductStock" class="form-control" required>
                 </div>
                 <button type="submit" class="btn-gold" style="width: 100%; justify-content: center; padding: 12px;">حفظ التعديلات في قاعدة البيانات 💾</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Product Modal -->
+    <div id="newProductModal" class="modal-overlay">
+        <div class="modal-box" style="max-width: 600px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h3 class="section-title">إضافة مستحضر جديد إلى الكتالوج</h3>
+                <button onclick="closeNewProductModal()" style="background:none; border:none; color:var(--text-secondary); font-size:1.5rem; cursor:pointer;">✕</button>
+            </div>
+            <form id="newProductForm">
+                <div class="form-group">
+                    <label>اسم المستحضر بالعربية</label>
+                    <input type="text" id="npTitleAr" class="form-control" placeholder="سيروم الببتيد الذهبي" required>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label>التصنيف</label>
+                        <select id="npCategoryKey" class="form-control">
+                            <option value="serums">سيرومات (Serums)</option>
+                            <option value="creams">كريمات وعناية العين (Creams)</option>
+                            <option value="cleansers">تنظيف وأقنعة (Cleansers & Masks)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>السعر بالدولار (USD)</label>
+                        <input type="number" id="npPriceUsd" class="form-control" value="45" step="0.5" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>الكمية بالمخزون</label>
+                    <input type="number" id="npStock" class="form-control" value="100" required>
+                </div>
+                <div class="form-group">
+                    <label>وصف مختصر بالعربية</label>
+                    <input type="text" id="npDescAr" class="form-control" placeholder="تركيبة نقية فرنسية لنضارة فورية" required>
+                </div>
+                <button type="submit" class="btn-gold" style="width: 100%; justify-content: center; padding: 12px; margin-top: 10px;">إضافة المنتج إلى المتجر 🧴</button>
             </form>
         </div>
     </div>

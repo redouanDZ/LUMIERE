@@ -6,7 +6,11 @@ const { requireAdmin } = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// Public: GET all products with filtering
+// ==========================================
+// PUBLIC STORE APIS
+// ==========================================
+
+// GET Products
 router.get('/products', async (req, res) => {
     try {
         const { category } = req.query;
@@ -25,7 +29,7 @@ router.get('/products', async (req, res) => {
     }
 });
 
-// Public: GET single product
+// GET Single Product
 router.get('/products/:id', async (req, res) => {
     try {
         const product = await query('SELECT * FROM products WHERE id = ?', [req.params.id]);
@@ -38,7 +42,7 @@ router.get('/products/:id', async (req, res) => {
     }
 });
 
-// Public: Validate Coupon
+// Validate Coupon
 router.post('/coupons/validate', async (req, res) => {
     try {
         const code = sanitizeString(req.body.code).toUpperCase();
@@ -57,7 +61,7 @@ router.post('/coupons/validate', async (req, res) => {
     }
 });
 
-// Public: Create Order
+// Create Order
 router.post('/orders', validateOrderInput, async (req, res) => {
     try {
         const { name, phone, country, city, address, paymentMethod, currency, items } = req.sanitizedOrder;
@@ -120,7 +124,7 @@ router.post('/orders', validateOrderInput, async (req, res) => {
     }
 });
 
-// Admin Auth: Login
+// Admin Auth
 router.post('/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -158,13 +162,16 @@ router.post('/auth/login', async (req, res) => {
     }
 });
 
-// Admin: Logout
 router.post('/auth/logout', (req, res) => {
     res.clearCookie('lumiere_admin_token');
     res.json({ success: true, message: 'Logged out' });
 });
 
-// Protected Admin: Enhanced Analytics & Dashboard Metrics
+// ==========================================
+// ADMIN FULL CRUD OPERATIONS
+// ==========================================
+
+// 1. STATS & ANALYTICS
 router.get('/admin/stats', requireAdmin, async (req, res) => {
     try {
         const totalOrders = await query('SELECT COUNT(*) as count, SUM(total_usd) as totalRevenue FROM orders');
@@ -172,13 +179,11 @@ router.get('/admin/stats', requireAdmin, async (req, res) => {
         const productsCount = await query('SELECT COUNT(*) as count FROM products');
         const couponsCount = await query('SELECT COUNT(*) as count FROM coupons');
 
-        // Country distribution
         const countryStats = await query(`
             SELECT customer_country as country, COUNT(*) as count, SUM(total_usd) as revenue
             FROM orders GROUP BY customer_country ORDER BY count DESC LIMIT 5
         `);
 
-        // Recent customers
         const customersList = await query(`
             SELECT customer_name as name, customer_phone as phone, customer_city as city,
                    customer_country as country, COUNT(*) as total_orders, SUM(total_usd) as total_spent,
@@ -207,7 +212,8 @@ router.get('/admin/stats', requireAdmin, async (req, res) => {
     }
 });
 
-// Protected Admin: Manage Coupons (List & Create)
+// 2. COUPONS CRUD
+// READ: Get all coupons
 router.get('/admin/coupons', requireAdmin, async (req, res) => {
     try {
         const coupons = await query('SELECT * FROM coupons ORDER BY id DESC');
@@ -217,6 +223,7 @@ router.get('/admin/coupons', requireAdmin, async (req, res) => {
     }
 });
 
+// CREATE: Add new coupon
 router.post('/admin/coupons', requireAdmin, async (req, res) => {
     try {
         const { code, discountPercent } = req.body;
@@ -230,7 +237,91 @@ router.post('/admin/coupons', requireAdmin, async (req, res) => {
     }
 });
 
-// Protected Admin: Update Order Status
+// UPDATE: Toggle coupon status (active/inactive)
+router.patch('/admin/coupons/:id/toggle', requireAdmin, async (req, res) => {
+    try {
+        const coup = await query('SELECT is_active FROM coupons WHERE id = ?', [req.params.id]);
+        if (coup.length === 0) return res.status(404).json({ success: false, message: 'Coupon not found' });
+        const newStatus = coup[0].is_active ? 0 : 1;
+        await run('UPDATE coupons SET is_active = ? WHERE id = ?', [newStatus, req.params.id]);
+        res.json({ success: true, is_active: newStatus, message: 'Coupon status updated' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// DELETE: Delete coupon permanently
+router.delete('/admin/coupons/:id', requireAdmin, async (req, res) => {
+    try {
+        await run('DELETE FROM coupons WHERE id = ?', [req.params.id]);
+        res.json({ success: true, message: 'Coupon deleted permanently' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// 3. PRODUCTS CRUD
+// CREATE: Add new product
+router.post('/admin/products', requireAdmin, async (req, res) => {
+    try {
+        const {
+            id, categoryKey, title_ar, title_en, category_ar, category_en,
+            desc_ar, desc_en, benefits_ar, benefits_en, usage_ar, usage_en,
+            ingredients, price_usd, stock, image, badge_ar, badge_en
+        } = req.body;
+
+        const cleanId = sanitizeString(id || 'prod_' + Date.now());
+        const pUsd = parseFloat(price_usd) || 45;
+        const pStock = parseInt(stock) || 50;
+
+        await run(`
+            INSERT INTO products (
+                id, category_key, title_ar, title_en, category_ar, category_en,
+                desc_ar, desc_en, benefits_ar, benefits_en, usage_ar, usage_en,
+                ingredients, price_usd, original_price_usd, stock, image, badge_ar, badge_en
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+            cleanId, categoryKey || 'serums', title_ar, title_en || title_ar,
+            category_ar || 'عناية فاخرة', category_en || 'Luxury Care',
+            desc_ar || '', desc_en || '', benefits_ar || '', benefits_en || '',
+            usage_ar || '', usage_en || '', ingredients || '',
+            pUsd, (pUsd * 1.3).toFixed(2), pStock, image || 'images/serum.jpg',
+            badge_ar || 'جديد', badge_en || 'New'
+        ]);
+
+        res.status(201).json({ success: true, message: 'Product created successfully' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// UPDATE: Update Product (Price & Stock)
+router.patch('/admin/products/:id', requireAdmin, async (req, res) => {
+    try {
+        const { price_usd, stock } = req.body;
+        await run('UPDATE products SET price_usd = ?, stock = ? WHERE id = ?', [
+            parseFloat(price_usd),
+            parseInt(stock),
+            req.params.id
+        ]);
+        res.json({ success: true, message: 'Product updated successfully' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// DELETE: Delete product
+router.delete('/admin/products/:id', requireAdmin, async (req, res) => {
+    try {
+        await run('DELETE FROM products WHERE id = ?', [req.params.id]);
+        res.json({ success: true, message: 'Product deleted permanently' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// 4. ORDERS CRUD
+// UPDATE: Update status
 router.patch('/admin/orders/:id/status', requireAdmin, async (req, res) => {
     try {
         const { status } = req.body;
@@ -246,16 +337,11 @@ router.patch('/admin/orders/:id/status', requireAdmin, async (req, res) => {
     }
 });
 
-// Protected Admin: Update Product Stock / Price
-router.patch('/admin/products/:id', requireAdmin, async (req, res) => {
+// DELETE: Delete order (e.g. test or fake orders)
+router.delete('/admin/orders/:id', requireAdmin, async (req, res) => {
     try {
-        const { price_usd, stock } = req.body;
-        await run('UPDATE products SET price_usd = ?, stock = ? WHERE id = ?', [
-            parseFloat(price_usd),
-            parseInt(stock),
-            req.params.id
-        ]);
-        res.json({ success: true, message: 'Product updated successfully' });
+        await run('DELETE FROM orders WHERE id = ?', [req.params.id]);
+        res.json({ success: true, message: 'Order deleted successfully' });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
