@@ -19,25 +19,22 @@
     <!-- Main Navigation Header -->
     <header class="lumiere-header">
         <div class="header-container">
-            <!-- Brand Logo -->
             <a href="#" class="logo-wrap">
                 <span class="logo-text">LUMIÈRE</span>
                 <span class="logo-sub">BOTANICS • PARIS</span>
             </a>
 
-            <!-- Nav Links -->
             <nav>
                 <ul class="nav-links">
-                    <li><a href="#products" class="nav-link active" data-i18n="navSerum">السيروم</a></li>
-                    <li><a href="#products" class="nav-link" data-i18n="navCream">كريم الببتيدات</a></li>
-                    <li><a href="#products" class="nav-link" data-i18n="navCleanser">الغسول النباتي</a></li>
+                    <li><a href="#products" onclick="filterCategory('all')" class="nav-link active" data-i18n="navAll">جميع المستحضرات</a></li>
+                    <li><a href="#products" onclick="filterCategory('serums')" class="nav-link" data-i18n="navSerums">السيرومات</a></li>
+                    <li><a href="#products" onclick="filterCategory('creams')" class="nav-link" data-i18n="navCreams">الكريمات والترميم</a></li>
+                    <li><a href="#products" onclick="filterCategory('cleansers')" class="nav-link" data-i18n="navCleansers">التنظيف والأقنعة</a></li>
                     <li><a href="#bundle" class="nav-link" data-i18n="navBundle">مجموعة النضارة</a></li>
                 </ul>
             </nav>
 
-            <!-- Controls: Currency, Language, Cart -->
             <div class="header-controls">
-                <!-- Currency Selector -->
                 <select id="currencySelector" class="select-pill" title="Choose Currency">
                     <option value="SAR">🇸🇦 SAR (ر.س)</option>
                     <option value="AED">🇦🇪 AED (د.إ)</option>
@@ -47,13 +44,11 @@
                     <option value="DZD">🇩🇿 DZD (د.ج)</option>
                 </select>
 
-                <!-- Language Switcher -->
                 <select id="langSelector" class="select-pill" title="Change Language">
                     <option value="ar">العربية (AR)</option>
                     <option value="en">English (EN)</option>
                 </select>
 
-                <!-- Shopping Bag Button -->
                 <button class="cart-btn" onclick="openCartDrawer()" title="View Cart">
                     <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
@@ -121,15 +116,74 @@
         </div>
     </section>
 
-    <!-- Curated Products Showcase -->
+    <!-- Clinical Proof Section -->
+    <section class="clinical-section">
+        <div class="clinical-container">
+            <span class="section-tag">CLINICAL EXCELLENCE</span>
+            <h2 class="section-title serif-font" data-i18n="clinTitle">نتائج سريرية مثبتة تثق بها آلاف النساء</h2>
+            <div class="clinical-stats-grid">
+                <div class="stat-box">
+                    <div class="stat-number">96%</div>
+                    <div class="stat-label" data-i18n="stat1Label">لاحظن نضارة وإشراقة فورية خلال 7 أيام</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number">91%</div>
+                    <div class="stat-label" data-i18n="stat2Label">انخفاض في مظهر التجاعيد والخطوط الدقيقة</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number">98%</div>
+                    <div class="stat-label" data-i18n="stat3Label">ترطيب عميق وحماية تدوم 24 ساعة</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Curated Products Showcase with Filters -->
     <section id="products" class="products-section">
         <div class="section-header">
             <span class="section-tag" data-i18n="productsTag">المجموعة الحصرية</span>
             <h2 class="section-title serif-font" data-i18n="productsTitle">مستحضرات النضارة الأكثر طلباً</h2>
         </div>
 
+        <div class="filter-pills">
+            <button class="filter-btn active" data-cat="all" onclick="filterCategory('all')" data-i18n="filterAll">الكل (6)</button>
+            <button class="filter-btn" data-cat="serums" onclick="filterCategory('serums')" data-i18n="filterSerums">السيرومات الفعالة</button>
+            <button class="filter-btn" data-cat="creams" onclick="filterCategory('creams')" data-i18n="filterCreams">الكريمات والترميم</button>
+            <button class="filter-btn" data-cat="cleansers" onclick="filterCategory('cleansers')" data-i18n="filterCleansers">التنظيف والتونر</button>
+        </div>
+
         <div id="lumiereProductsGrid" class="products-grid">
-            <!-- Rendered dynamically by js/lumiere.js -->
+            <!-- Dynamic 6 Products -->
+        </div>
+    </section>
+
+    <!-- 4-Step Skincare Daily Ritual -->
+    <section class="ritual-section">
+        <div class="section-header">
+            <span class="section-tag" data-i18n="ritualTag">روتين العناية اليومي</span>
+            <h2 class="section-title serif-font" data-i18n="ritualTitle">طقوس الإشراقة في 4 خطوات بسيطة</h2>
+        </div>
+        <div class="ritual-grid">
+            <div class="ritual-step">
+                <div class="step-num">1</div>
+                <h4 data-i18n="step1Title">1. التنظيف العميق</h4>
+                <p data-i18n="step1Desc">غسول نباتي ينقي المسام بلطف دون تجريد الزيوت الطبيعية.</p>
+            </div>
+            <div class="ritual-step">
+                <div class="step-num">2</div>
+                <h4 data-i18n="step2Title">2. شد المسام والانتعاش</h4>
+                <p data-i18n="step2Desc">تونر الورد والنياسيناميد يوازن الإفرازات ويهيئ البشرة.</p>
+            </div>
+            <div class="ritual-step">
+                <div class="step-num">3</div>
+                <h4 data-i18n="step3Title">3. التغذية والإشراقة</h4>
+                <p data-i18n="step3Desc">سيروم فيتامين C الثابت لتفتيح وتوحيد لون البشرة.</p>
+            </div>
+            <div class="ritual-step">
+                <div class="step-num">4</div>
+                <h4 data-i18n="step4Title">4. الترميم والحماية</h4>
+                <p data-i18n="step4Desc">كريم الببتيدات الليلي لشد البشرة ومحاربة علامات التقدم.</p>
+            </div>
         </div>
     </section>
 
@@ -142,7 +196,7 @@
             <div class="bundle-content">
                 <span class="hero-tag" style="background: rgba(197, 160, 89, 0.2); color: #E7C885;" data-i18n="bundleTag">عرض التوفير الأكبر</span>
                 <h2 class="serif-font" data-i18n="bundleTitle">مجموعة طقوس الإشراقة الكاملة (The Glow Ritual Set)</h2>
-                <p data-i18n="bundleDesc">احصلي على الثلاثي المتكامل: الغسول المنقي + سيروم النضارة + كريم الببتيدات الليلي بخصم استثنائي 30% مع شحن مجاني وحقيبة قطنية فاخرة.</p>
+                <p data-i18n="bundleDesc">احصلي على الثلاثي الذهبي الأكثر طلباً: الغسول + سيروم النضارة + كريم الببتيدات بخصم استثنائي 30% مع شحن مجاني وحقيبة هدايا فاخرة.</p>
                 
                 <ul class="bundle-features">
                     <li><span class="check-icon">✓</span> <span data-i18n="bundleFeat1">توفير 30% مقارنة بشراء كل منتج منفرداً</span></li>
@@ -162,7 +216,117 @@
         </div>
     </section>
 
-    <!-- Slide-out Cart Drawer -->
+    <!-- Verified Reviews -->
+    <section class="reviews-section">
+        <div class="section-header">
+            <span class="section-tag">REAL EXPERIENCES</span>
+            <h2 class="section-title serif-font" data-i18n="revTitle">تجارب وآراء عميلاتنا في الخليج والعالم</h2>
+        </div>
+        <div class="reviews-grid">
+            <div class="review-card">
+                <div class="review-header">
+                    <span class="review-author" data-i18n="rev1Author">سارة العتيبي — الرياض 🇸🇦</span>
+                    <span class="verified-badge">✓ مشتري موثق</span>
+                </div>
+                <div style="color: #EAB308; margin-bottom: 8px;">★★★★★</div>
+                <p class="review-text" data-i18n="rev1Text">«استخدمت سيروم النضارة وكريم الببتيدات منذ شهر، النتيجة سحرية! خفت التصبغات ووجهي أصبح مشرقاً بدون مكياج. أفضل استثمار لبشرتي!»</p>
+                <span class="review-product-tag">اشترت: سيروم النضارة الفائق</span>
+            </div>
+            <div class="review-card">
+                <div class="review-header">
+                    <span class="review-author" data-i18n="rev2Author">مريم الشامسي — دبي 🇦🇪</span>
+                    <span class="verified-badge">✓ مشتري موثق</span>
+                </div>
+                <div style="color: #EAB308; margin-bottom: 8px;">★★★★★</div>
+                <p class="review-text" data-i18n="rev2Text">«التوصيل كان سريعاً جداً لدبي (خلال 48 ساعة فقط)، والتغليف فخم وراقي جداً. غسول الوجه وقناع الطمي الوردي مذهلان للبشرة الحساسة.»</p>
+                <span class="review-product-tag">اشترت: مجموعة طقوس الإشراقة</span>
+            </div>
+            <div class="review-card">
+                <div class="review-header">
+                    <span class="review-author" data-i18n="rev3Author">د. ليلى المنصور — الكويت 🇰🇼</span>
+                    <span class="verified-badge">✓ مشتري موثق</span>
+                </div>
+                <div style="color: #EAB308; margin-bottom: 8px;">★★★★★</div>
+                <p class="review-text" data-i18n="rev3Text">«منتجات حقيقية بمستوى البراندات الباريسية العالمية ولكن بسعر ممتاز. كريم محيط العين خفف الهالات بشكل ملحوظ في أسبوعين فقط.»</p>
+                <span class="review-product-tag">اشترت: كريم محيط العين</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Accordion -->
+    <section class="faq-section">
+        <div class="faq-container">
+            <div class="section-header">
+                <span class="section-tag" data-i18n="faqTag">الأسئلة الشائعة</span>
+                <h2 class="section-title serif-font" data-i18n="faqTitle">كل ما تحتاجين معرفته عن LUMIÈRE</h2>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span data-i18n="faq1Q">هل المنتجات مناسبة للحوامل وللبشرة الحساسة؟</span>
+                    <span class="faq-icon">+</span>
+                </div>
+                <div class="faq-answer" data-i18n="faq1A">نعم بكل تأكيد! جميع مستحضراتنا نباتية 100%، خالية تماماً من البارابين والعطور الاصطناعية والكحول والمواد الكيميائية القاسية، ومختبرة سريرياً تحت إشراف أطباء الجلدية.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span data-i18n="faq2Q">كم تستغرق مدة الشحن لدول الخليج؟</span>
+                    <span class="faq-icon">+</span>
+                </div>
+                <div class="faq-answer" data-i18n="faq2A">يتم شحن الطلبات عبر خدمة الشحن السريع الجوي (Aramex / DHL) وتصل لباب منزلك خلال 24 إلى 48 ساعة في السعودية والإمارات والكويت وباقي دول الخليج.</div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span data-i18n="faq3Q">ما هي سياسة الاسترجاع والضمان الذهبي؟</span>
+                    <span class="faq-icon">+</span>
+                </div>
+                <div class="faq-answer" data-i18n="faq3A">نقدم ضمان الرضا الذهبي لمدة 30 يوماً. إذا لم تلاحظي فرقاً حقيقياً في نضارة ونعومة بشرتك، يمكنك استرجاع كامل المبلغ بكل سهولة.</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick View Modal with Tabs -->
+    <div id="quickViewOverlay" class="modal-overlay" onclick="closeQuickView()">
+        <div class="quickview-modal" onclick="event.stopPropagation()">
+            <button class="modal-close-btn" onclick="closeQuickView()">✕</button>
+            <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 30px; align-items: start;">
+                <div style="border-radius: var(--radius-md); overflow: hidden; background: #FAF7F2;">
+                    <img id="qvImage" src="" alt="Product Detail" style="width: 100%; aspect-ratio: 1/1; object-fit: cover; display: block;">
+                </div>
+                <div>
+                    <span id="qvCategory" class="product-category"></span>
+                    <h3 id="qvTitle" class="serif-font" style="font-size: 1.6rem; margin: 4px 0 8px;"></h3>
+                    <div id="qvRating" style="color: #EAB308; font-size: 0.85rem; margin-bottom: 12px;"></div>
+                    <div id="qvPrice" style="font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 16px;"></div>
+                    <p id="qvDesc" style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 20px;"></p>
+
+                    <div style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 14px;">
+                        <button id="tabBtn_benefits" class="qv-tab-btn active" onclick="switchTab('benefits')" style="background: none; border: none; border-bottom: 2px solid var(--accent-gold); padding: 6px 12px; font-weight: 700; cursor: pointer;">الفوائد السريرية</button>
+                        <button id="tabBtn_usage" class="qv-tab-btn" onclick="switchTab('usage')" style="background: none; border: none; padding: 6px 12px; font-weight: 600; cursor: pointer; color: var(--text-muted);">طريقة الاستخدام</button>
+                        <button id="tabBtn_ingredients" class="qv-tab-btn" onclick="switchTab('ingredients')" style="background: none; border: none; padding: 6px 12px; font-weight: 600; cursor: pointer; color: var(--text-muted);">المكونات</button>
+                    </div>
+
+                    <div id="tabContent_benefits" class="qv-tab-content" style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 20px;">
+                        <div id="qvBenefits"></div>
+                    </div>
+                    <div id="tabContent_usage" class="qv-tab-content" style="display: none; font-size: 0.88rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 20px;">
+                        <div id="qvUsage"></div>
+                    </div>
+                    <div id="tabContent_ingredients" class="qv-tab-content" style="display: none; font-size: 0.85rem; color: var(--text-muted); line-height: 1.7; margin-bottom: 20px;">
+                        <div id="qvIngredients"></div>
+                    </div>
+
+                    <button id="qvAddBtn" class="btn-luxury" style="width: 100%; justify-content: center;">
+                        أضف إلى حقيبة التسوق 🛍️
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide-out Cart Drawer with Coupon -->
     <div id="cartDrawerOverlay" class="cart-drawer-overlay" onclick="closeCartDrawer()"></div>
     <aside id="cartDrawer" class="cart-drawer">
         <div class="drawer-header">
@@ -173,6 +337,12 @@
             <!-- Items injected by JS -->
         </div>
         <div class="drawer-footer">
+            <div class="coupon-row">
+                <input type="text" id="couponCodeInput" class="coupon-input" placeholder="كود الخصم (جربي GLOW10)">
+                <button class="btn-apply-coupon" onclick="applyCoupon()">تطبيق</button>
+            </div>
+            <div id="couponNotice" style="font-size: 0.78rem; margin-bottom: 10px;"></div>
+
             <div class="cart-total-row">
                 <span data-i18n="cartTotal">المجموع الإجمالي:</span>
                 <span id="cartDrawerTotal">0 ر.س</span>
@@ -253,6 +423,15 @@
         </div>
     </div>
 
+    <!-- Live Social Proof Toast -->
+    <div id="socialProofToast" class="social-proof-toast">
+        <div class="toast-avatar">✨</div>
+        <div class="toast-text">
+            <p id="toastCustomer">نورة العتيبي (الرياض 🇸🇦)</p>
+            <span id="toastProduct">اشترت: سيروم إكسير النضارة</span> • <span id="toastTime">قبل دقيقتين</span>
+        </div>
+    </div>
+
     <!-- Luxury Footer -->
     <footer class="lumiere-footer">
         <div class="footer-grid">
@@ -263,9 +442,9 @@
             <div class="footer-col">
                 <h4>المجموعة</h4>
                 <ul>
-                    <li><a href="#products">سيروم النضارة</a></li>
-                    <li><a href="#products">كريم الببتيدات</a></li>
-                    <li><a href="#products">الغسول النباتي</a></li>
+                    <li><a href="#products">السيرومات المركزة</a></li>
+                    <li><a href="#products">كريمات الترميم والعيون</a></li>
+                    <li><a href="#products">الأقنعة والغسول</a></li>
                     <li><a href="#bundle">مجموعة التوفير 30%</a></li>
                 </ul>
             </div>
@@ -273,7 +452,7 @@
                 <h4>خدمة العملاء</h4>
                 <ul>
                     <li><a href="#bundle">الشحن والتوصيل السريع</a></li>
-                    <li><a href="#bundle">سياسة الاستبدال والاسترجاع</a></li>
+                    <li><a href="#bundle">الضمان الذهبي 30 يوماً</a></li>
                     <li><a href="#bundle">الأسئلة الشائعة</a></li>
                     <li><a href="#bundle">تتبع الشحنة</a></li>
                 </ul>
@@ -289,7 +468,7 @@
         </div>
         <div class="footer-bottom">
             <span>© 2026 LUMIÈRE Botanics Paris. All rights reserved.</span>
-            <span>Made with passion for pure botanical beauty.</span>
+            <span>Crafted for true botanical luxury & clinical glow.</span>
         </div>
     </footer>
 

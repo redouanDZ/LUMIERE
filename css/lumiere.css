@@ -1,6 +1,5 @@
-/* ==========================================================================
-   LUMIÈRE BOTANICS — Luxury International Skincare Design System
-   Aesthetics: Minimalist Parisian Luxury, Warm Beige, Muted Rose, Polished Gold
+﻿/* ==========================================================================
+   LUMIÈRE BOTANICS — Luxury International Skincare Flagship Platform
    ========================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Tajawal:wght@300;400;500;700&display=swap');
@@ -19,7 +18,7 @@
     --border-light: rgba(197, 160, 89, 0.2);
     --border-subtle: #EBE4D8;
     --shadow-soft: 0 10px 30px -5px rgba(28, 25, 23, 0.05);
-    --shadow-luxury: 0 20px 40px -10px rgba(197, 160, 89, 0.15);
+    --shadow-luxury: 0 20px 40px -10px rgba(197, 160, 89, 0.18);
     --transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     --radius-sm: 8px;
     --radius-md: 14px;
@@ -48,12 +47,11 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-/* RTL Support */
-[dir="rtl"] {
+[dir=rtl] {
     font-family: 'Tajawal', var(--font-sans);
 }
 
-[dir="rtl"] .serif-font {
+[dir=rtl] .serif-font {
     font-family: 'Tajawal', var(--font-serif);
     font-weight: 700;
 }
@@ -85,19 +83,19 @@ body {
     font-size: 0.72rem;
 }
 
-/* Header & Navigation */
+/* Header */
 .lumiere-header {
     position: sticky;
     top: 0;
     z-index: 1000;
-    background: rgba(250, 247, 242, 0.88);
-    backdrop-filter: blur(14px);
+    background: rgba(250, 247, 242, 0.92);
+    backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--border-light);
     transition: var(--transition);
 }
 
 .header-container {
-    max-width: 1280px;
+    max-width: 1320px;
     margin: 0 auto;
     padding: 16px 24px;
     display: flex;
@@ -114,7 +112,7 @@ body {
 
 .logo-text {
     font-family: var(--font-serif);
-    font-size: 2rem;
+    font-size: 2.1rem;
     font-weight: 700;
     letter-spacing: 4px;
     color: var(--text-primary);
@@ -123,7 +121,7 @@ body {
 }
 
 .logo-sub {
-    font-size: 0.65rem;
+    font-size: 0.68rem;
     letter-spacing: 3px;
     color: var(--accent-gold);
     text-transform: uppercase;
@@ -133,13 +131,13 @@ body {
 .nav-links {
     display: flex;
     list-style: none;
-    gap: 32px;
+    gap: 28px;
 }
 
 .nav-link {
     text-decoration: none;
     color: var(--text-secondary);
-    font-size: 0.9rem;
+    font-size: 0.92rem;
     font-weight: 500;
     letter-spacing: 0.5px;
     transition: var(--transition);
@@ -169,10 +167,9 @@ body {
 .header-controls {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
 }
 
-/* Currency & Language Dropdowns */
 .select-pill {
     background: #FFFFFF;
     border: 1px solid var(--border-subtle);
@@ -229,12 +226,12 @@ body {
 /* Hero Section */
 .lumiere-hero {
     position: relative;
-    padding: 60px 24px 80px;
-    background: radial-gradient(circle at 80% 20%, rgba(232, 213, 200, 0.4) 0%, rgba(250, 247, 242, 1) 70%);
+    padding: 70px 24px 90px;
+    background: radial-gradient(circle at 80% 20%, rgba(232, 213, 200, 0.45) 0%, rgba(250, 247, 242, 1) 70%);
 }
 
 .hero-grid {
-    max-width: 1280px;
+    max-width: 1320px;
     margin: 0 auto;
     display: grid;
     grid-template-columns: 1.1fr 0.9fr;
@@ -258,19 +255,19 @@ body {
 }
 
 .hero-title {
-    font-size: 3.5rem;
+    font-size: 3.6rem;
     font-weight: 700;
     line-height: 1.15;
-    margin-bottom: 20px;
+    margin-bottom: 22px;
     color: var(--text-primary);
 }
 
 .hero-desc {
-    font-size: 1.1rem;
+    font-size: 1.12rem;
     color: var(--text-secondary);
-    margin-bottom: 34px;
-    max-width: 520px;
-    line-height: 1.7;
+    margin-bottom: 36px;
+    max-width: 530px;
+    line-height: 1.75;
 }
 
 .hero-actions {
@@ -346,15 +343,15 @@ body {
 .trust-section {
     border-block: 1px solid var(--border-subtle);
     background: #FFFFFF;
-    padding: 24px 20px;
+    padding: 26px 20px;
 }
 
 .trust-container {
-    max-width: 1200px;
+    max-width: 1240px;
     margin: 0 auto;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
+    gap: 24px;
 }
 
 .trust-card {
@@ -364,20 +361,20 @@ body {
 }
 
 .trust-icon {
-    width: 44px;
-    height: 44px;
+    width: 46px;
+    height: 46px;
     border-radius: 50%;
-    background: rgba(197, 160, 89, 0.1);
+    background: rgba(197, 160, 89, 0.12);
     color: var(--accent-gold);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     flex-shrink: 0;
 }
 
 .trust-text h4 {
-    font-size: 0.9rem;
+    font-size: 0.92rem;
     font-weight: 700;
     color: var(--text-primary);
 }
@@ -387,16 +384,59 @@ body {
     color: var(--text-muted);
 }
 
-/* Products Section */
+/* Clinical Proof Stats */
+.clinical-section {
+    padding: 70px 24px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.clinical-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.clinical-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+    margin-top: 40px;
+}
+
+.stat-box {
+    background: #FFFFFF;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 34px 24px;
+    box-shadow: var(--shadow-soft);
+}
+
+.stat-number {
+    font-family: var(--font-serif);
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: var(--accent-gold-hover);
+    line-height: 1;
+    margin-bottom: 8px;
+}
+
+.stat-label {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+/* Products Section & Filters */
 .products-section {
     padding: 80px 24px;
-    max-width: 1280px;
+    max-width: 1320px;
     margin: 0 auto;
 }
 
 .section-header {
     text-align: center;
-    margin-bottom: 50px;
+    margin-bottom: 40px;
 }
 
 .section-tag {
@@ -408,10 +448,36 @@ body {
 }
 
 .section-title {
-    font-size: 2.5rem;
+    font-size: 2.6rem;
     font-weight: 700;
     color: var(--text-primary);
     margin-top: 6px;
+}
+
+.filter-pills {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    background: #FFFFFF;
+    border: 1px solid var(--border-subtle);
+    padding: 10px 22px;
+    border-radius: 25px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.filter-btn:hover, .filter-btn.active {
+    background: var(--text-primary);
+    color: #FFFFFF;
+    border-color: var(--text-primary);
 }
 
 .products-grid {
@@ -460,6 +526,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    cursor: pointer;
 }
 
 .product-image-box img {
@@ -482,10 +549,11 @@ body {
 }
 
 .product-title {
-    font-size: 1.3rem;
+    font-size: 1.25rem;
     font-weight: 700;
     margin: 4px 0 8px;
     color: var(--text-primary);
+    cursor: pointer;
 }
 
 .product-rating {
@@ -573,20 +641,67 @@ body {
     color: #FFFFFF;
 }
 
+/* 4-Step Skincare Ritual */
+.ritual-section {
+    padding: 80px 24px;
+    background: #FFFFFF;
+    border-block: 1px solid var(--border-subtle);
+}
+
+.ritual-grid {
+    max-width: 1240px;
+    margin: 40px auto 0;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    position: relative;
+}
+
+.ritual-step {
+    background: var(--bg-primary);
+    border-radius: var(--radius-md);
+    padding: 30px 20px;
+    text-align: center;
+    border: 1px solid var(--border-subtle);
+}
+
+.step-num {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--accent-gold);
+    color: #FFFFFF;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+}
+
+.ritual-step h4 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.ritual-step p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
 /* Bundle Special Banner */
 .bundle-section {
     background: #1C1917;
     color: #FAF7F2;
     padding: 80px 24px;
-    margin: 40px 0;
 }
 
 .bundle-container {
-    max-width: 1200px;
+    max-width: 1240px;
     margin: 0 auto;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 50px;
+    gap: 60px;
     align-items: center;
 }
 
@@ -608,7 +723,7 @@ body {
     margin-bottom: 30px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
 }
 
 .bundle-features li {
@@ -621,6 +736,113 @@ body {
 .bundle-features li span.check-icon {
     color: var(--accent-gold);
     font-weight: bold;
+}
+
+/* Verified Reviews & Testimonials */
+.reviews-section {
+    padding: 80px 24px;
+    max-width: 1320px;
+    margin: 0 auto;
+}
+
+.reviews-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+    margin-top: 40px;
+}
+
+.review-card {
+    background: #FFFFFF;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 26px;
+    box-shadow: var(--shadow-soft);
+}
+
+.review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.review-author {
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.verified-badge {
+    color: #10B981;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.review-text {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 14px;
+}
+
+.review-product-tag {
+    font-size: 0.78rem;
+    color: var(--accent-gold-hover);
+    font-weight: 600;
+}
+
+/* FAQ Accordion */
+.faq-section {
+    padding: 80px 24px;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-subtle);
+}
+
+.faq-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.faq-item {
+    background: #FFFFFF;
+    border-radius: var(--radius-sm);
+    margin-bottom: 14px;
+    border: 1px solid var(--border-subtle);
+    overflow: hidden;
+}
+
+.faq-question {
+    padding: 18px 22px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.faq-answer {
+    padding: 0 22px 18px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    display: none;
+}
+
+.faq-item.active .faq-answer {
+    display: block;
+}
+
+.faq-icon {
+    font-size: 1.2rem;
+    transition: transform 0.3s ease;
+}
+
+.faq-item.active .faq-icon {
+    transform: rotate(45deg);
 }
 
 /* Slide-out Cart Drawer */
@@ -643,9 +865,9 @@ body {
 .cart-drawer {
     position: fixed;
     top: 0;
-    inset-inline-end: -420px;
-    width: 400px;
-    max-width: 90vw;
+    inset-inline-end: -440px;
+    width: 420px;
+    max-width: 92vw;
     height: 100vh;
     background: #FFFFFF;
     z-index: 2001;
@@ -721,6 +943,32 @@ body {
     background: #FAF7F2;
 }
 
+.coupon-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.coupon-input {
+    flex-grow: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    outline: none;
+}
+
+.btn-apply-coupon {
+    background: #1C1917;
+    color: #FFFFFF;
+    border: none;
+    padding: 8px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
 .cart-total-row {
     display: flex;
     justify-content: space-between;
@@ -747,7 +995,7 @@ body {
     color: #1C1917;
 }
 
-/* Fast Checkout Modal */
+/* Modals */
 .modal-overlay {
     position: fixed;
     inset: 0;
@@ -768,16 +1016,20 @@ body {
     visibility: visible;
 }
 
-.checkout-modal {
+.checkout-modal, .quickview-modal {
     background: #FFFFFF;
-    width: 520px;
+    width: 540px;
     max-width: 95vw;
     max-height: 90vh;
     overflow-y: auto;
     border-radius: var(--radius-lg);
-    padding: 30px 24px;
+    padding: 32px 26px;
     position: relative;
     box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+}
+
+.quickview-modal {
+    width: 760px;
 }
 
 .modal-close-btn {
@@ -836,15 +1088,65 @@ body {
     color: var(--text-secondary);
 }
 
+/* Live Social Proof Toast */
+.social-proof-toast {
+    position: fixed;
+    bottom: 24px;
+    inset-inline-start: 24px;
+    background: #FFFFFF;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: var(--shadow-luxury);
+    z-index: 1500;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.4s ease;
+    pointer-events: none;
+}
+
+.social-proof-toast.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.toast-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--accent-rose);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.toast-text p {
+    font-size: 0.84rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.toast-text span {
+    font-size: 0.74rem;
+    color: var(--text-muted);
+}
+
 /* Footer */
 .lumiere-footer {
     background: #1C1917;
     color: #FAF7F2;
-    padding: 60px 24px 30px;
+    padding: 70px 24px 34px;
 }
 
 .footer-grid {
-    max-width: 1280px;
+    max-width: 1320px;
     margin: 0 auto;
     display: grid;
     grid-template-columns: 2fr 1fr 1fr 1fr;
@@ -854,7 +1156,7 @@ body {
 
 .footer-brand h3 {
     font-family: var(--font-serif);
-    font-size: 1.8rem;
+    font-size: 2rem;
     letter-spacing: 3px;
     margin-bottom: 12px;
 }
@@ -863,7 +1165,7 @@ body {
     color: #A8A29E;
     font-size: 0.9rem;
     line-height: 1.7;
-    max-width: 320px;
+    max-width: 330px;
 }
 
 .footer-col h4 {
@@ -892,7 +1194,7 @@ body {
 }
 
 .footer-bottom {
-    max-width: 1280px;
+    max-width: 1320px;
     margin: 0 auto;
     padding-top: 24px;
     border-top: 1px solid #292524;
@@ -903,66 +1205,30 @@ body {
     color: #78716C;
 }
 
-/* Mobile Responsiveness */
+/* Responsive */
 @media (max-width: 992px) {
     .hero-grid {
         grid-template-columns: 1fr;
         text-align: center;
         gap: 40px;
     }
-
-    .hero-desc {
-        margin-inline: auto;
-    }
-
-    .hero-actions {
-        justify-content: center;
-    }
-
-    .products-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .bundle-container {
-        grid-template-columns: 1fr;
-        text-align: center;
-    }
-
-    .trust-container {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .footer-grid {
-        grid-template-columns: 1fr 1fr;
-    }
+    .hero-desc { margin-inline: auto; }
+    .hero-actions { justify-content: center; }
+    .products-grid { grid-template-columns: repeat(2, 1fr); }
+    .bundle-container { grid-template-columns: 1fr; text-align: center; }
+    .trust-container { grid-template-columns: repeat(2, 1fr); }
+    .clinical-stats-grid { grid-template-columns: 1fr; }
+    .ritual-grid { grid-template-columns: repeat(2, 1fr); }
+    .reviews-grid { grid-template-columns: 1fr; }
+    .footer-grid { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 768px) {
-    .nav-links {
-        display: none;
-    }
-
-    .hero-title {
-        font-size: 2.3rem;
-    }
-
-    .products-grid {
-        grid-template-columns: 1fr;
-        max-width: 420px;
-        margin-inline: auto;
-    }
-
-    .trust-container {
-        grid-template-columns: 1fr;
-    }
-
-    .footer-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .footer-bottom {
-        flex-direction: column;
-        gap: 12px;
-        text-align: center;
-    }
+    .nav-links { display: none; }
+    .hero-title { font-size: 2.4rem; }
+    .products-grid { grid-template-columns: 1fr; max-width: 440px; margin-inline: auto; }
+    .trust-container { grid-template-columns: 1fr; }
+    .ritual-grid { grid-template-columns: 1fr; }
+    .footer-grid { grid-template-columns: 1fr; }
+    .footer-bottom { flex-direction: column; gap: 12px; text-align: center; }
 }
