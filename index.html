@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LUMIÈRE Botanics — High-End Clean Skincare & Beauty</title>
+    <meta name="description" content="LUMIÈRE Paris — Ultra-pure botanical organic skincare and radiance rituals. Express delivery across the Gulf & Worldwide.">
+    <link rel="stylesheet" href="css/lumiere.css">
+    <link rel="icon" href="images/serum.jpg" type="image/jpeg">
+</head>
+<body>
+
+    <!-- Announcement Bar -->
+    <div class="announcement-bar">
+        <span class="gold-badge">PROMO</span>
+        <span data-i18n="announcement">✨ عرض حصري: شحن سريع مجاني لجميع دول الخليج والعالم للطلبات فوق 200 ريال</span>
+    </div>
+
+    <!-- Main Navigation Header -->
+    <header class="lumiere-header">
+        <div class="header-container">
+            <!-- Brand Logo -->
+            <a href="#" class="logo-wrap">
+                <span class="logo-text">LUMIÈRE</span>
+                <span class="logo-sub">BOTANICS • PARIS</span>
+            </a>
+
+            <!-- Nav Links -->
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="#products" class="nav-link active" data-i18n="navSerum">السيروم</a></li>
+                    <li><a href="#products" class="nav-link" data-i18n="navCream">كريم الببتيدات</a></li>
+                    <li><a href="#products" class="nav-link" data-i18n="navCleanser">الغسول النباتي</a></li>
+                    <li><a href="#bundle" class="nav-link" data-i18n="navBundle">مجموعة النضارة</a></li>
+                </ul>
+            </nav>
+
+            <!-- Controls: Currency, Language, Cart -->
+            <div class="header-controls">
+                <!-- Currency Selector -->
+                <select id="currencySelector" class="select-pill" title="Choose Currency">
+                    <option value="SAR">🇸🇦 SAR (ر.س)</option>
+                    <option value="AED">🇦🇪 AED (د.إ)</option>
+                    <option value="USD">🇺🇸 USD ($)</option>
+                    <option value="EUR">🇪🇺 EUR (€)</option>
+                    <option value="KWD">🇰🇼 KWD (د.ك)</option>
+                    <option value="DZD">🇩🇿 DZD (د.ج)</option>
+                </select>
+
+                <!-- Language Switcher -->
+                <select id="langSelector" class="select-pill" title="Change Language">
+                    <option value="ar">العربية (AR)</option>
+                    <option value="en">English (EN)</option>
+                </select>
+
+                <!-- Shopping Bag Button -->
+                <button class="cart-btn" onclick="openCartDrawer()" title="View Cart">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                    </svg>
+                    <span id="cartBadgeCount" class="cart-count">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="lumiere-hero">
+        <div class="hero-grid">
+            <div class="hero-text-col">
+                <span class="hero-tag" data-i18n="heroTag">العناية الباريسية الفاخرة</span>
+                <h1 class="hero-title serif-font" data-i18n="heroTitle">سر النضارة والإشراقة الخالدة لبشرتك</h1>
+                <p class="hero-desc" data-i18n="heroDesc">مستحضرات عناية طبيعية 100% مصممة بأعلى معايير النقاء السريري لتمنح بشرتك حيوية متجددة وملمساً ناعماً كالحرير.</p>
+                <div class="hero-actions">
+                    <a href="#products" class="btn-luxury" data-i18n="btnBuyNow">
+                        تسوق الآن
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                        </svg>
+                    </a>
+                    <a href="#bundle" class="btn-outline" data-i18n="btnDiscover">اكتشف المجموعة</a>
+                </div>
+            </div>
+            <div class="hero-image-wrap">
+                <img src="images/hero.jpg" alt="Lumiere Luxury Skincare Collection">
+            </div>
+        </div>
+    </section>
+
+    <!-- Trust Badges Bar -->
+    <section class="trust-section">
+        <div class="trust-container">
+            <div class="trust-card">
+                <div class="trust-icon">🌿</div>
+                <div class="trust-text">
+                    <h4 data-i18n="trust1Title">عضوي ونباتي 100%</h4>
+                    <p data-i18n="trust1Desc">مكونات نقية معتمدة دولياً</p>
+                </div>
+            </div>
+            <div class="trust-card">
+                <div class="trust-icon">✈️</div>
+                <div class="trust-text">
+                    <h4 data-i18n="trust2Title">شحن خليجي سريع</h4>
+                    <p data-i18n="trust2Desc">توصيل لباب المنزل خلال 48 ساعة</p>
+                </div>
+            </div>
+            <div class="trust-card">
+                <div class="trust-icon">🛡️</div>
+                <div class="trust-text">
+                    <h4 data-i18n="trust3Title">دفع آمن أو عند الاستلام</h4>
+                    <p data-i18n="trust3Desc">Apple Pay، مدى، فيزا، و COD</p>
+                </div>
+            </div>
+            <div class="trust-card">
+                <div class="trust-icon">✨</div>
+                <div class="trust-text">
+                    <h4 data-i18n="trust4Title">مضمون طبياً وجلدياً</h4>
+                    <p data-i18n="trust4Desc">مختبر سريرياً ومناسب للبشرة الحساسة</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Curated Products Showcase -->
+    <section id="products" class="products-section">
+        <div class="section-header">
+            <span class="section-tag" data-i18n="productsTag">المجموعة الحصرية</span>
+            <h2 class="section-title serif-font" data-i18n="productsTitle">مستحضرات النضارة الأكثر طلباً</h2>
+        </div>
+
+        <div id="lumiereProductsGrid" class="products-grid">
+            <!-- Rendered dynamically by js/lumiere.js -->
+        </div>
+    </section>
+
+    <!-- The Glow Ritual Bundle Special -->
+    <section id="bundle" class="bundle-section">
+        <div class="bundle-container">
+            <div class="bundle-image-box" style="border-radius: var(--radius-md); overflow: hidden;">
+                <img src="images/hero.jpg" alt="The Complete Glow Ritual Set" style="width: 100%; height: 100%; object-fit: cover; display: block;">
+            </div>
+            <div class="bundle-content">
+                <span class="hero-tag" style="background: rgba(197, 160, 89, 0.2); color: #E7C885;" data-i18n="bundleTag">عرض التوفير الأكبر</span>
+                <h2 class="serif-font" data-i18n="bundleTitle">مجموعة طقوس الإشراقة الكاملة (The Glow Ritual Set)</h2>
+                <p data-i18n="bundleDesc">احصلي على الثلاثي المتكامل: الغسول المنقي + سيروم النضارة + كريم الببتيدات الليلي بخصم استثنائي 30% مع شحن مجاني وحقيبة قطنية فاخرة.</p>
+                
+                <ul class="bundle-features">
+                    <li><span class="check-icon">✓</span> <span data-i18n="bundleFeat1">توفير 30% مقارنة بشراء كل منتج منفرداً</span></li>
+                    <li><span class="check-icon">✓</span> <span data-i18n="bundleFeat2">روتين صباحي ومسائي متكامل للوجه والعنق</span></li>
+                    <li><span class="check-icon">✓</span> <span data-i18n="bundleFeat3">نتائج ملحوظة ونضارة مضاعفة خلال 7 أيام</span></li>
+                </ul>
+
+                <div style="margin-bottom: 24px; display: flex; align-items: baseline; gap: 12px;">
+                    <span id="bundlePriceCurrent" style="font-size: 2.2rem; font-weight: 700; color: #E7C885;">368 ر.س</span>
+                    <span id="bundlePriceOriginal" style="font-size: 1.2rem; text-decoration: line-through; color: #8F8A84;">520 ر.س</span>
+                </div>
+
+                <button class="btn-luxury" onclick="quickBuyBundle()" style="background: var(--accent-gold); color: #1C1917; width: 100%; justify-content: center;" data-i18n="bundleBuy">
+                    اطلب المجموعة كاملة الآن بخصم 30%
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide-out Cart Drawer -->
+    <div id="cartDrawerOverlay" class="cart-drawer-overlay" onclick="closeCartDrawer()"></div>
+    <aside id="cartDrawer" class="cart-drawer">
+        <div class="drawer-header">
+            <h3 data-i18n="cartTitle">حقيبة التسوق</h3>
+            <button class="close-drawer-btn" onclick="closeCartDrawer()">✕</button>
+        </div>
+        <div id="cartDrawerItems" class="drawer-body">
+            <!-- Items injected by JS -->
+        </div>
+        <div class="drawer-footer">
+            <div class="cart-total-row">
+                <span data-i18n="cartTotal">المجموع الإجمالي:</span>
+                <span id="cartDrawerTotal">0 ر.س</span>
+            </div>
+            <button class="btn-checkout" onclick="closeCartDrawer(); openCheckoutModal();" data-i18n="btnCheckout">
+                إتمام الطلب السريع ⚡
+            </button>
+        </div>
+    </aside>
+
+    <!-- Fast Checkout Modal -->
+    <div id="checkoutModalOverlay" class="modal-overlay">
+        <div class="checkout-modal">
+            <button class="modal-close-btn" onclick="closeCheckoutModal()">✕</button>
+            <h3 class="serif-font" style="font-size: 1.6rem; margin-bottom: 8px; color: var(--text-primary);" data-i18n="checkoutTitle">إتمام الطلب والشحن السريع</h3>
+            <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 20px;">يرجى تزويدنا بعنوان التوصيل لتجهيز شحنتك فوراً.</p>
+
+            <form id="lumiereCheckoutForm">
+                <div class="form-group">
+                    <label class="form-label" data-i18n="lblFullName">الاسم الكامل *</label>
+                    <input type="text" id="customerName" class="form-input" required placeholder="مثال: سارة الشمري">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" data-i18n="lblPhone">رقم الجوال *</label>
+                    <input type="tel" id="customerPhone" class="form-input" required placeholder="مثال: 966501234567">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" data-i18n="lblCountry">الدولة وموقع التوصيل *</label>
+                    <select id="customerCountry" class="form-select" required>
+                        <option value="المملكة العربية السعودية">🇸🇦 المملكة العربية السعودية (KSA)</option>
+                        <option value="الإمارات العربية المتحدة">🇦🇪 الإمارات العربية المتحدة (UAE)</option>
+                        <option value="دولة الكويت">🇰🇼 دولة الكويت (Kuwait)</option>
+                        <option value="دولة قطر">🇶🇦 دولة قطر (Qatar)</option>
+                        <option value="مملكة البحرين">🇧🇭 مملكة البحرين (Bahrain)</option>
+                        <option value="سلطنة عمان">🇴🇲 سلطنة عمان (Oman)</option>
+                        <option value="الجزائر">🇩🇿 الجزائر (Algeria)</option>
+                        <option value="International">🌍 دولي (International)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" data-i18n="lblCity">المدينة / المنطقة *</label>
+                    <input type="text" id="customerCity" class="form-input" required placeholder="مثال: الرياض / دبي">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" data-i18n="lblAddress">العنوان بالتفصيل *</label>
+                    <input type="text" id="customerAddress" class="form-input" required placeholder="اسم الحي والشارع">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" data-i18n="lblPayment">طريقة الدفع المفضلة *</label>
+                    <select id="customerPaymentMethod" class="form-select">
+                        <option value="cod" data-i18n="payCod">الدفع عند الاستلام (COD)</option>
+                        <option value="card" data-i18n="payCard">بطاقة بنكية / مدى / Apple Pay</option>
+                    </select>
+                    <div class="payment-badges">
+                        <span class="payment-badge">Apple Pay</span>
+                        <span class="payment-badge">Mada</span>
+                        <span class="payment-badge">Visa</span>
+                        <span class="payment-badge">MasterCard</span>
+                        <span class="payment-badge">COD</span>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-luxury" style="width: 100%; justify-content: center; margin-top: 10px;" data-i18n="btnConfirmOrder">
+                    تأكيد الطلب وشحن المنتجات فوراً 🛍️
+                </button>
+            </form>
+
+            <div id="orderConfirmationNotice" style="display: none;"></div>
+            
+            <a id="btnWhatsAppCheckout" href="#" target="_blank" class="btn-luxury" style="display: none; width: 100%; justify-content: center; background: #25D366; color: #FFFFFF; margin-top: 10px;" data-i18n="btnWhatsAppOrder">
+                تأكيد الطلب السريع عبر WhatsApp 💬
+            </a>
+        </div>
+    </div>
+
+    <!-- Luxury Footer -->
+    <footer class="lumiere-footer">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <h3 class="serif-font">LUMIÈRE</h3>
+                <p>مستحضرات عناية فاخرة تعتمد على خلاصات نباتية نقية ومكونات سريرية معتمدة لإشراقة بشرتك الخالدة.</p>
+            </div>
+            <div class="footer-col">
+                <h4>المجموعة</h4>
+                <ul>
+                    <li><a href="#products">سيروم النضارة</a></li>
+                    <li><a href="#products">كريم الببتيدات</a></li>
+                    <li><a href="#products">الغسول النباتي</a></li>
+                    <li><a href="#bundle">مجموعة التوفير 30%</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>خدمة العملاء</h4>
+                <ul>
+                    <li><a href="#bundle">الشحن والتوصيل السريع</a></li>
+                    <li><a href="#bundle">سياسة الاستبدال والاسترجاع</a></li>
+                    <li><a href="#bundle">الأسئلة الشائعة</a></li>
+                    <li><a href="#bundle">تتبع الشحنة</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>تواصل معنا</h4>
+                <ul>
+                    <li><a href="https://wa.me/213669754875">خدمة كونسيرج WhatsApp</a></li>
+                    <li><a href="#">contact@lumiere-botanics.com</a></li>
+                    <li><span style="font-size: 0.85rem; color: #8F8A84;">باريس • الرياض • دبي</span></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>© 2026 LUMIÈRE Botanics Paris. All rights reserved.</span>
+            <span>Made with passion for pure botanical beauty.</span>
+        </div>
+    </footer>
+
+    <script src="js/lumiere.js"></script>
+</body>
+</html>
