@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { query, run } = require('../database/db');
 const { validateOrderInput, sanitizeString } = require('../middleware/validator');
-const { requireAdmin } = require('../middleware/auth');
+const { requireAdmin, getJwtSecret } = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
@@ -141,7 +141,7 @@ router.post('/auth/login', async (req, res) => {
 
         const token = jwt.sign(
             { id: user.id, name: user.name, email: user.email, role: user.role },
-            process.env.JWT_SECRET || 'lumiere_super_secret_jwt_key_2026_paris_luxury',
+            getJwtSecret(),
             { expiresIn: '7d' }
         );
 
@@ -380,7 +380,7 @@ router.post('/customer/register', async (req, res) => {
 
         const token = jwt.sign(
             { id: result.lastID, name, email, role: 'customer' },
-            process.env.JWT_SECRET || 'lumiere_super_secret_jwt_key_2026_paris_luxury',
+            getJwtSecret(),
             { expiresIn: '30d' }
         );
 
@@ -421,7 +421,7 @@ router.post('/customer/login', async (req, res) => {
 
         const token = jwt.sign(
             { id: cust.id, name: cust.name, email: cust.email, role: 'customer' },
-            process.env.JWT_SECRET || 'lumiere_super_secret_jwt_key_2026_paris_luxury',
+            getJwtSecret(),
             { expiresIn: '30d' }
         );
 
@@ -463,7 +463,7 @@ router.get('/customer/me', async (req, res) => {
         const token = req.cookies?.lumiere_customer_token || req.headers['authorization']?.split(' ')[1];
         if (!token) return res.status(401).json({ success: false, message: 'غير مسجل الدخول' });
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'lumiere_super_secret_jwt_key_2026_paris_luxury');
+        const decoded = jwt.verify(token, getJwtSecret());
         const customers = await query('SELECT id, name, email, phone, country, city, address, reward_points FROM customers WHERE id = ?', [decoded.id]);
         if (customers.length === 0) return res.status(404).json({ success: false, message: 'العميل غير موجود' });
 
@@ -491,7 +491,7 @@ router.put('/customer/me', async (req, res) => {
         const token = req.cookies?.lumiere_customer_token || req.headers['authorization']?.split(' ')[1];
         if (!token) return res.status(401).json({ success: false, message: 'غير مسجل الدخول' });
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'lumiere_super_secret_jwt_key_2026_paris_luxury');
+        const decoded = jwt.verify(token, getJwtSecret());
         let { name, phone, country, city, address } = req.body;
 
         name = sanitizeString(name);

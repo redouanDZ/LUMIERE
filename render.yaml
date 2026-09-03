@@ -14,9 +14,9 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: ADMIN_EMAIL
-        value: admin@lumiere-botanics.com
+        sync: false
       - key: ADMIN_PASSWORD
-        value: lumiere2026!
+        sync: false
     disk:
       name: lumiere-data
       mountPath: /app/data

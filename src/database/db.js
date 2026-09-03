@@ -131,17 +131,24 @@ const initSchema = async () => {
         )
     `);
 
-    // Seed default admin
-    const adminExists = await query('SELECT * FROM users WHERE email = ?', ['admin@lumiere-botanics.com']);
+    // Seed initial admin from environment variables
+    const adminEmail = (process.env.ADMIN_EMAIL || 'admin@lumiere-botanics.com').trim().toLowerCase();
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    const adminExists = await query('SELECT * FROM users WHERE role = ?', ['admin']);
     if (adminExists.length === 0) {
-        const hashed = await bcrypt.hash('lumiere2026!', 10);
+        if (!adminPassword && process.env.NODE_ENV === 'production') {
+            console.warn('⚠️ WARNING: ADMIN_PASSWORD is not set in environment variables! Please set it in .env');
+        }
+        const initialPass = adminPassword || 'Admin_ChangeMe_2026!';
+        const hashed = await bcrypt.hash(initialPass, 12);
         await run('INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)', [
-            'LUMIÈRE Director',
-            'admin@lumiere-botanics.com',
+            'LUMIÈRE Executive Admin',
+            adminEmail,
             hashed,
             'admin'
         ]);
-        console.log('✓ Seeded default Admin user: admin@lumiere-botanics.com');
+        console.log('✓ Initialized Admin user for: ' + adminEmail);
     }
 
     // Seed default coupons

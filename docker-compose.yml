@@ -8,13 +8,13 @@ services:
     container_name: lumiere_platform
     restart: unless-stopped
     ports:
-      - "4000:4000"
+      - "${PORT:-4000}:4000"
     environment:
       - PORT=4000
-      - NODE_ENV=production
-      - JWT_SECRET=lumiere_super_secret_jwt_key_2026_paris_luxury
-      - ADMIN_EMAIL=admin@lumiere-botanics.com
-      - ADMIN_PASSWORD=lumiere2026!
+      - NODE_ENV=${NODE_ENV:-production}
+      - JWT_SECRET=${JWT_SECRET}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - DATABASE_FILE=/app/data/lumiere.db
     volumes:
       - lumiere_data:/app/data
