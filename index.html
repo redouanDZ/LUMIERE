@@ -473,5 +473,98 @@
     </footer>
 
     <script src="js/lumiere.js"></script>
+
+    <!-- Luxury Customer Auth & Portal Modal -->
+    <div id="customerModal" class="modal-overlay">
+        <div class="modal-box" style="background:#FAF7F2; color:#1C1917; border:1px solid var(--accent-gold); max-width: 520px; border-radius: 20px; padding: 32px; box-shadow: 0 25px 60px rgba(0,0,0,0.3);">
+            
+            <!-- Close Button -->
+            <button onclick="closeCustomerModal()" style="position: absolute; top: 20px; inset-inline-end: 20px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #888;">✕</button>
+
+            <!-- AUTH VIEW (LOGIN / REGISTER) -->
+            <div id="customerAuthView">
+                <div style="text-align: center; margin-bottom: 24px;">
+                    <div style="font-family: 'Cormorant Garamond', serif; font-size: 2.2rem; color: var(--accent-gold); letter-spacing: 2px;">LUMIÈRE</div>
+                    <div style="font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase; color: #78716C;">Parisian Privilege Club</div>
+                </div>
+
+                <!-- Tabs: Login / Register -->
+                <div style="display: flex; border-bottom: 1px solid #E7E5E4; margin-bottom: 24px;">
+                    <button id="tabLoginBtn" onclick="switchAuthMode('login')" style="flex: 1; padding: 10px; background: none; border: none; border-bottom: 2px solid var(--accent-gold); font-weight: 700; color: #1C1917; cursor: pointer;">تسجيل الدخول</button>
+                    <button id="tabRegisterBtn" onclick="switchAuthMode('register')" style="flex: 1; padding: 10px; background: none; border: none; border-bottom: 2px solid transparent; color: #78716C; cursor: pointer;">إنشاء حساب جديد</button>
+                </div>
+
+                <!-- LOGIN FORM -->
+                <form id="customerLoginForm">
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label style="font-size: 0.85rem; font-weight: 600; color: #44403C;">البريد الإلكتروني</label>
+                        <input type="email" id="custLoginEmail" class="form-input" style="background: #fff; border: 1px solid #D6D3D1; color: #1C1917;" placeholder="sarah@example.com" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 24px;">
+                        <label style="font-size: 0.85rem; font-weight: 600; color: #44403C;">كلمة المرور</label>
+                        <input type="password" id="custLoginPassword" class="form-input" style="background: #fff; border: 1px solid #D6D3D1; color: #1C1917;" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="btn-luxury" style="width: 100%; justify-content: center; background: var(--accent-gold); color: #fff;">
+                        دخول إلى حسابي 🌸
+                    </button>
+                </form>
+
+                <!-- REGISTER FORM -->
+                <form id="customerRegisterForm" style="display: none;">
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label style="font-size: 0.85rem; font-weight: 600; color: #44403C;">الاسم الكامل</label>
+                        <input type="text" id="custRegName" class="form-input" style="background: #fff; border: 1px solid #D6D3D1; color: #1C1917;" placeholder="سارة العتيبي" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label style="font-size: 0.85rem; font-weight: 600; color: #44403C;">البريد الإلكتروني</label>
+                        <input type="email" id="custRegEmail" class="form-input" style="background: #fff; border: 1px solid #D6D3D1; color: #1C1917;" placeholder="sarah@example.com" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label style="font-size: 0.85rem; font-weight: 600; color: #44403C;">رقم الجوال (مع الرمز الدولي)</label>
+                        <input type="tel" id="custRegPhone" class="form-input" style="background: #fff; border: 1px solid #D6D3D1; color: #1C1917; direction: ltr; text-align: right;" placeholder="+966 50 123 4567" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label style="font-size: 0.85rem; font-weight: 600; color: #44403C;">المدينة والدولة</label>
+                        <input type="text" id="custRegCity" class="form-input" style="background: #fff; border: 1px solid #D6D3D1; color: #1C1917;" placeholder="الرياض، المملكة العربية السعودية" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="font-size: 0.85rem; font-weight: 600; color: #44403C;">كلمة المرور (6 أحرف أو أكثر)</label>
+                        <input type="password" id="custRegPassword" class="form-input" style="background: #fff; border: 1px solid #D6D3D1; color: #1C1917;" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="btn-luxury" style="width: 100%; justify-content: center; background: var(--accent-gold); color: #fff;">
+                        انضمام لنادي لوميير للنخبة 👑 (هدية 100 نقطة)
+                    </button>
+                </form>
+                <div id="custAuthMsg" style="margin-top: 14px; text-align: center; font-size: 0.85rem;"></div>
+            </div>
+
+            <!-- CUSTOMER PORTAL VIEW (WHEN LOGGED IN) -->
+            <div id="customerProfileView" style="display: none;">
+                <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #E7E5E4; padding-bottom: 16px; margin-bottom: 20px;">
+                    <div>
+                        <h3 id="portalCustName" style="font-family: 'Cormorant Garamond', serif; font-size: 1.8rem; color: #1C1917;">مرحباً سارة 🌸</h3>
+                        <p id="portalCustEmail" style="font-size: 0.82rem; color: #78716C;">sarah@example.com</p>
+                    </div>
+                    <div style="background: #FEF3C7; border: 1px solid #F59E0B; padding: 6px 14px; border-radius: 20px; text-align: center;">
+                        <span style="font-size: 0.75rem; color: #92400E; font-weight: 700;">نقاط النخبة</span>
+                        <div id="portalCustPoints" style="font-size: 1.2rem; font-weight: 800; color: #B45309;">100 نقطة</div>
+                    </div>
+                </div>
+
+                <!-- My Orders Section -->
+                <h4 style="font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; margin-bottom: 12px; color: var(--accent-gold);">سجل طلباتي السابقة (My Orders)</h4>
+                <div id="customerOrdersList" style="max-height: 220px; overflow-y: auto; margin-bottom: 20px; border: 1px solid #E7E5E4; border-radius: 12px; padding: 12px; background: #fff;">
+                    <div style="text-align: center; color: #888; font-size: 0.85rem; padding: 20px;">جاري تحميل طلباتك...</div>
+                </div>
+
+                <div style="display: flex; gap: 12px;">
+                    <button onclick="logoutCustomer()" class="btn-outline" style="flex: 1; padding: 10px; justify-content: center; border-color: #DC2626; color: #DC2626;">تسجيل الخروج ✕</button>
+                    <button onclick="closeCustomerModal()" class="btn-luxury" style="flex: 1; padding: 10px; justify-content: center; background: var(--accent-gold); color: #fff;">متابعة التسوق 🛍️</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    
 </body>
 </html>

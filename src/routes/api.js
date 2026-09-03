@@ -347,4 +347,168 @@ router.delete('/admin/orders/:id', requireAdmin, async (req, res) => {
     }
 });
 
+
+// ==========================================
+// CUSTOMER AUTH & PORTAL APIS
+// ==========================================
+
+// Customer Register
+router.post('/customer/register', async (req, res) => {
+    try {
+        let { name, email, password, phone, country, city, address } = req.body;
+        name = sanitizeString(name);
+        email = sanitizeString(email).toLowerCase();
+        phone = sanitizeString(phone);
+        country = sanitizeString(country) || 'Saudi Arabia';
+        city = sanitizeString(city) || 'Riyadh';
+        address = sanitizeString(address) || '';
+
+        if (!name || name.length < 2) return res.status(400).json({ success: false, message: 'الاسم مطلوب' });
+        if (!email || !email.includes('@')) return res.status(400).json({ success: false, message: 'بريد إلكتروني غير صالح' });
+        if (!password || password.length < 6) return res.status(400).json({ success: false, message: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' });
+
+        const existing = await query('SELECT id FROM customers WHERE email = ?', [email]);
+        if (existing.length > 0) {
+            return res.status(400).json({ success: false, message: 'هذا البريد الإلكتروني مسجل بالفعل' });
+        }
+
+        const password_hash = await bcrypt.hash(password, 10);
+        const result = await run(`
+            INSERT INTO customers (name, email, password_hash, phone, country, city, address, reward_points)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 100)
+        `, [name, email, password_hash, phone, country, city, address]);
+
+        const token = jwt.sign(
+            { id: result.lastID, name, email, role: 'customer' },
+            process.env.JWT_SECRET || 'lumiere_super_secret_jwt_key_2026_paris_luxury',
+            { expiresIn: '30d' }
+        );
+
+        res.cookie('lumiere_customer_token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 30 * 24 * 60 * 60 * 1000
+        });
+
+        res.status(201).json({
+            success: true,
+            customer: { id: result.lastID, name, email, phone, country, city, address, reward_points: 100 },
+            token,
+            message: 'تم إنشاء الحساب بنجاح وتمت إضافة 100 نقطة ترحيبية 🎁'
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Customer Login
+router.post('/customer/login', async (req, res) => {
+    try {
+        let { email, password } = req.body;
+        email = sanitizeString(email).toLowerCase();
+
+        const customers = await query('SELECT * FROM customers WHERE email = ?', [email]);
+        if (customers.length === 0) {
+            return res.status(401).json({ success: false, message: 'البريد أو كلمة المرور غير صحيحة' });
+        }
+
+        const cust = customers[0];
+        const match = await bcrypt.compare(password, cust.password_hash);
+        if (!match) {
+            return res.status(401).json({ success: false, message: 'البريد أو كلمة المرور غير صحيحة' });
+        }
+
+        const token = jwt.sign(
+            { id: cust.id, name: cust.name, email: cust.email, role: 'customer' },
+            process.env.JWT_SECRET || 'lumiere_super_secret_jwt_key_2026_paris_luxury',
+            { expiresIn: '30d' }
+        );
+
+        res.cookie('lumiere_customer_token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 30 * 24 * 60 * 60 * 1000
+        });
+
+        res.json({
+            success: true,
+            customer: {
+                id: cust.id,
+                name: cust.name,
+                email: cust.email,
+                phone: cust.phone,
+                country: cust.country,
+                city: cust.city,
+                address: cust.address,
+                reward_points: cust.reward_points
+            },
+            token
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Customer Logout
+router.post('/customer/logout', (req, res) => {
+    res.clearCookie('lumiere_customer_token');
+    res.json({ success: true, message: 'تم تسجيل الخروج بنجاح' });
+});
+
+// Customer Profile & Order History
+router.get('/customer/me', async (req, res) => {
+    try {
+        const token = req.cookies?.lumiere_customer_token || req.headers['authorization']?.split(' ')[1];
+        if (!token) return res.status(401).json({ success: false, message: 'غير مسجل الدخول' });
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'lumiere_super_secret_jwt_key_2026_paris_luxury');
+        const customers = await query('SELECT id, name, email, phone, country, city, address, reward_points FROM customers WHERE id = ?', [decoded.id]);
+        if (customers.length === 0) return res.status(404).json({ success: false, message: 'العميل غير موجود' });
+
+        const cust = customers[0];
+
+        // Fetch their orders by phone or customer email match
+        const orders = await query('SELECT * FROM orders WHERE customer_phone = ? OR customer_name = ? ORDER BY id DESC', [cust.phone, cust.name]);
+
+        res.json({
+            success: true,
+            customer: cust,
+            orders: orders.map(o => ({
+                ...o,
+                items: JSON.parse(o.items_json || '[]')
+            }))
+        });
+    } catch (err) {
+        res.status(401).json({ success: false, message: 'جلسة منتهية الصلاحية' });
+    }
+});
+
+// Customer Update Profile
+router.put('/customer/me', async (req, res) => {
+    try {
+        const token = req.cookies?.lumiere_customer_token || req.headers['authorization']?.split(' ')[1];
+        if (!token) return res.status(401).json({ success: false, message: 'غير مسجل الدخول' });
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'lumiere_super_secret_jwt_key_2026_paris_luxury');
+        let { name, phone, country, city, address } = req.body;
+
+        name = sanitizeString(name);
+        phone = sanitizeString(phone);
+        country = sanitizeString(country);
+        city = sanitizeString(city);
+        address = sanitizeString(address);
+
+        await run(`
+            UPDATE customers SET name = ?, phone = ?, country = ?, city = ?, address = ?
+            WHERE id = ?
+        `, [name, phone, country, city, address, decoded.id]);
+
+        res.json({ success: true, message: 'تم تحديث البيانات بنجاح' });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 module.exports = router;

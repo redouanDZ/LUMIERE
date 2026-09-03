@@ -741,3 +741,201 @@ function setupEventListeners() {
         });
     }
 }
+
+
+// ==========================================
+// LUXURY CUSTOMER ACCOUNT & PORTAL ENGINE
+// ==========================================
+let currentCustomer = null;
+
+async function checkCustomerSession() {
+    try {
+        const res = await fetch('/api/customer/me');
+        const data = await res.json();
+        if (data.success && data.customer) {
+            setLoggedInCustomer(data.customer);
+            renderCustomerOrders(data.orders || []);
+        } else {
+            setLoggedOutCustomer();
+        }
+    } catch (e) {
+        setLoggedOutCustomer();
+    }
+}
+
+function setLoggedInCustomer(cust) {
+    currentCustomer = cust;
+    const btn = document.getElementById('customerAuthBtn');
+    if (btn) {
+        document.getElementById('customerAuthIcon').textContent = '✨';
+        document.getElementById('customerAuthLabel').textContent = cust.name.split(' ')[0];
+    }
+    // Autofill checkout fields if empty
+    const nameInput = document.getElementById('customerName');
+    const phoneInput = document.getElementById('customerPhone');
+    const cityInput = document.getElementById('customerCity');
+    const addressInput = document.getElementById('customerAddress');
+    if (nameInput && !nameInput.value) nameInput.value = cust.name;
+    if (phoneInput && !phoneInput.value) phoneInput.value = cust.phone;
+    if (cityInput && !cityInput.value) cityInput.value = cust.city;
+    if (addressInput && !addressInput.value) addressInput.value = cust.address || '';
+}
+
+function setLoggedOutCustomer() {
+    currentCustomer = null;
+    const btn = document.getElementById('customerAuthBtn');
+    if (btn) {
+        document.getElementById('customerAuthIcon').textContent = '👤';
+        document.getElementById('customerAuthLabel').textContent = 'تسجيل الدخول';
+    }
+}
+
+function openCustomerAuthModal() {
+    const modal = document.getElementById('customerModal');
+    if (!modal) return;
+    modal.classList.add('active');
+
+    if (currentCustomer) {
+        document.getElementById('customerAuthView').style.display = 'none';
+        document.getElementById('customerProfileView').style.display = 'block';
+        document.getElementById('portalCustName').textContent = 'مرحباً ' + currentCustomer.name + ' 🌸';
+        document.getElementById('portalCustEmail').textContent = currentCustomer.email;
+        document.getElementById('portalCustPoints').textContent = (currentCustomer.reward_points || 100) + ' نقطة';
+        loadCustomerOrders();
+    } else {
+        document.getElementById('customerAuthView').style.display = 'block';
+        document.getElementById('customerProfileView').style.display = 'none';
+        switchAuthMode('login');
+    }
+}
+
+function closeCustomerModal() {
+    const modal = document.getElementById('customerModal');
+    if (modal) modal.classList.remove('active');
+}
+
+function switchAuthMode(mode) {
+    const loginTab = document.getElementById('tabLoginBtn');
+    const regTab = document.getElementById('tabRegisterBtn');
+    const loginForm = document.getElementById('customerLoginForm');
+    const regForm = document.getElementById('customerRegisterForm');
+    const msg = document.getElementById('custAuthMsg');
+    if (msg) msg.textContent = '';
+
+    if (mode === 'login') {
+        loginTab.style.borderBottom = '2px solid var(--accent-gold)';
+        loginTab.style.fontWeight = '700';
+        regTab.style.borderBottom = '2px solid transparent';
+        regTab.style.fontWeight = '400';
+        loginForm.style.display = 'block';
+        regForm.style.display = 'none';
+    } else {
+        regTab.style.borderBottom = '2px solid var(--accent-gold)';
+        regTab.style.fontWeight = '700';
+        loginTab.style.borderBottom = '2px solid transparent';
+        loginTab.style.fontWeight = '400';
+        regForm.style.display = 'block';
+        loginForm.style.display = 'none';
+    }
+}
+
+// Handle Customer Login
+document.getElementById('customerLoginForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('custLoginEmail').value;
+    const password = document.getElementById('custLoginPassword').value;
+    const msg = document.getElementById('custAuthMsg');
+
+    try {
+        const res = await fetch('/api/customer/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (data.success) {
+            setLoggedInCustomer(data.customer);
+            openCustomerAuthModal();
+        } else {
+            msg.style.color = '#DC2626';
+            msg.textContent = data.message;
+        }
+    } catch (err) {
+        msg.style.color = '#DC2626';
+        msg.textContent = 'حدث خطأ أثناء الاتصال بالخادم';
+    }
+});
+
+// Handle Customer Register
+document.getElementById('customerRegisterForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('custRegName').value;
+    const email = document.getElementById('custRegEmail').value;
+    const phone = document.getElementById('custRegPhone').value;
+    const city = document.getElementById('custRegCity').value;
+    const password = document.getElementById('custRegPassword').value;
+    const msg = document.getElementById('custAuthMsg');
+
+    try {
+        const res = await fetch('/api/customer/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, phone, city, password })
+        });
+        const data = await res.json();
+        if (data.success) {
+            setLoggedInCustomer(data.customer);
+            openCustomerAuthModal();
+        } else {
+            msg.style.color = '#DC2626';
+            msg.textContent = data.message;
+        }
+    } catch (err) {
+        msg.style.color = '#DC2626';
+        msg.textContent = 'حدث خطأ أثناء إنشاء الحساب';
+    }
+});
+
+async function loadCustomerOrders() {
+    try {
+        const res = await fetch('/api/customer/me');
+        const data = await res.json();
+        if (data.success) {
+            renderCustomerOrders(data.orders || []);
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+function renderCustomerOrders(orders) {
+    const container = document.getElementById('customerOrdersList');
+    if (!container) return;
+
+    if (orders.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: #888; font-size: 0.85rem; padding: 20px;">لم تقومي بأي طلب بعد. اختاري مستحضراتك المفضلة وسجلي طلبك الأول 🌸</div>';
+        return;
+    }
+
+    container.innerHTML = orders.map(o => `
+        <div style="border-bottom: 1px solid #F5F5F4; padding: 10px 0; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+            <div>
+                <div style="font-weight: 700; color: #1C1917;">طلب رقم: <span style="color: var(--accent-gold);">${o.order_number}</span></div>
+                <div style="color: #78716C; font-size: 0.78rem;">${new Date(o.created_at).toLocaleDateString('ar-SA')}</div>
+            </div>
+            <div style="text-align: start;">
+                <div style="font-weight: 700; color: #1C1917;">${o.total_local} ${o.currency}</div>
+                <span class="badge" style="background:#DBEAFE; color:#1E40AF; padding: 2px 8px; border-radius: 10px; font-size: 0.72rem;">${o.status}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function logoutCustomer() {
+    await fetch('/api/customer/logout', { method: 'POST' });
+    setLoggedOutCustomer();
+    closeCustomerModal();
+}
+
+// Run check on page load
+checkCustomerSession();
