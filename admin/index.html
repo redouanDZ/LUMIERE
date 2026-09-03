@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LUMIÈRE Paris — Admin Operations Hub</title>
+    <link rel="stylesheet" href="../css/lumiere.css">
+    <style>
+        body { background: #1C1917; color: #FAF7F2; min-height: 100vh; padding: 24px; }
+        .admin-card { background: #292524; border: 1px solid rgba(197, 160, 89, 0.3); border-radius: 16px; padding: 24px; margin-bottom: 24px; }
+        .admin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
+        .stat-box { background: #322D29; border-radius: 12px; padding: 20px; border-inline-start: 4px solid var(--accent-gold); }
+        .stat-val { font-size: 2.2rem; font-weight: 700; color: #E7C885; }
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 0.9rem; }
+        th, td { padding: 12px 14px; text-align: start; border-bottom: 1px solid #44403C; }
+        th { color: var(--accent-gold); font-weight: 600; }
+        .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; }
+        .status-pending { background: #FEF3C7; color: #92400E; }
+        .status-shipped { background: #DBEAFE; color: #1E40AF; }
+        .status-delivered { background: #D1FAE5; color: #065F46; }
+        .login-box { max-width: 400px; margin: 80px auto; background: #292524; padding: 36px; border-radius: 20px; border: 1px solid var(--accent-gold); }
+    </style>
+</head>
+<body>
+
+    <!-- Login View (Hidden when logged in) -->
+    <div id="adminLoginSection" class="login-box">
+        <h2 class="serif-font" style="text-align: center; color: var(--accent-gold); font-size: 2rem; margin-bottom: 6px;">LUMIÈRE</h2>
+        <p style="text-align: center; font-size: 0.85rem; color: #A8A29E; margin-bottom: 24px;">لوحة التحكم الإدارية وإدارة الطلبات</p>
+        
+        <form id="adminLoginForm">
+            <div style="margin-bottom: 16px;">
+                <label style="font-size: 0.85rem;">البريد الإلكتروني الإداري</label>
+                <input type="email" id="adminEmail" class="form-input" style="background: #1C1917; color: #fff; border-color: #57534E;" value="admin@lumiere-botanics.com" required>
+            </div>
+            <div style="margin-bottom: 24px;">
+                <label style="font-size: 0.85rem;">كلمة المرور</label>
+                <input type="password" id="adminPassword" class="form-input" style="background: #1C1917; color: #fff; border-color: #57534E;" value="lumiere2026!" required>
+            </div>
+            <button type="submit" class="btn-luxury" style="width: 100%; justify-content: center; background: var(--accent-gold); color: #1C1917;">
+                تسجيل الدخول للنظام 🔐
+            </button>
+        </form>
+        <div id="loginError" style="color: #EF4444; font-size: 0.85rem; margin-top: 14px; text-align: center;"></div>
+    </div>
+
+    <!-- Dashboard View -->
+    <div id="adminDashboardSection" style="display: none; max-width: 1280px; margin: 0 auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <div>
+                <h1 class="serif-font" style="font-size: 2.2rem; color: var(--accent-gold);">LUMIÈRE PARIS — لوحة إدارة العمليات</h1>
+                <p style="color: #A8A29E; font-size: 0.9rem;">إدارة الطلبات، المبيعات الخليجية، والمخزون</p>
+            </div>
+            <button onclick="logoutAdmin()" class="btn-outline" style="border-color: #A8A29E; color: #A8A29E; padding: 8px 20px;">خروج</button>
+        </div>
+
+        <div class="admin-grid">
+            <div class="stat-box">
+                <div style="color: #A8A29E; font-size: 0.85rem;">إجمالي المبيعات (USD)</div>
+                <div id="statRevenue" class="stat-val">$0</div>
+            </div>
+            <div class="stat-box">
+                <div style="color: #A8A29E; font-size: 0.85rem;">عدد الطلبات الكلي</div>
+                <div id="statOrders" class="stat-val">0</div>
+            </div>
+            <div class="stat-box">
+                <div style="color: #A8A29E; font-size: 0.85rem;">المستحضرات النشطة</div>
+                <div id="statProducts" class="stat-val">6</div>
+            </div>
+        </div>
+
+        <div class="admin-card">
+            <h3 class="serif-font" style="font-size: 1.5rem; color: #E7C885;">قائمة الطلبات الحديثة (Orders Stream)</h3>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>رقم الطلب</th>
+                            <th>الزبونة</th>
+                            <th>الجوال</th>
+                            <th>الدولة / المدينة</th>
+                            <th>المبلغ</th>
+                            <th>الحالة</th>
+                            <th>إجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersTableBody">
+                        <tr><td colspan="7" style="text-align: center; color: #888;">جاري تحميل البيانات...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api';
+
+        document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('adminEmail').value;
+            const password = document.getElementById('adminPassword').value;
+
+            try {
+                const res = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showDashboard();
+                    loadStats();
+                } else {
+                    document.getElementById('loginError').textContent = data.message;
+                }
+            } catch (err) {
+                document.getElementById('loginError').textContent = 'فشل الاتصال بالخادم';
+            }
+        });
+
+        async function loadStats() {
+            try {
+                const res = await fetch(`${API_URL}/admin/stats`);
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('statRevenue').textContent = '$' + data.stats.totalRevenueUsd;
+                    document.getElementById('statOrders').textContent = data.stats.totalOrders;
+                    document.getElementById('statProducts').textContent = data.stats.totalProducts;
+
+                    const tbody = document.getElementById('ordersTableBody');
+                    if (data.recentOrders.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 30px;">لا توجد طلبات بعد. الطلبات الجديدة ستظهر هنا فوراً.</td></tr>';
+                    } else {
+                        tbody.innerHTML = data.recentOrders.map(o => `
+                            <tr>
+                                <td style="font-weight: 700; color: #E7C885;">${o.order_number}</td>
+                                <td>${o.customer_name}</td>
+                                <td>${o.customer_phone}</td>
+                                <td>${o.customer_country} - ${o.customer_city}</td>
+                                <td>${o.total_local} ${o.currency}</td>
+                                <td><span class="status-badge status-${o.status}">${o.status}</span></td>
+                                <td>
+                                    <select onchange="updateOrderStatus(${o.id}, this.value)" style="background: #1C1917; color: #fff; border: 1px solid #555; padding: 4px 8px; border-radius: 6px;">
+                                        <option value="pending" ${o.status === 'pending' ? 'selected' : ''}>قيد المعالجة</option>
+                                        <option value="shipped" ${o.status === 'shipped' ? 'selected' : ''}>تم الشحن</option>
+                                        <option value="delivered" ${o.status === 'delivered' ? 'selected' : ''}>تم التسليم</option>
+                                        <option value="cancelled" ${o.status === 'cancelled' ? 'selected' : ''}>إلغاء</option>
+                                    </select>
+                                </td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function updateOrderStatus(orderId, newStatus) {
+            await fetch(`${API_URL}/admin/orders/${orderId}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
+            loadStats();
+        }
+
+        function showDashboard() {
+            document.getElementById('adminLoginSection').style.display = 'none';
+            document.getElementById('adminDashboardSection').style.display = 'block';
+        }
+
+        async function logoutAdmin() {
+            await fetch(`${API_URL}/auth/logout`, { method: 'POST' });
+            location.reload();
+        }
+    </script>
+</body>
+</html>

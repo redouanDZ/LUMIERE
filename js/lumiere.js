@@ -705,7 +705,7 @@ function setupEventListeners() {
 
     const form = document.getElementById('lumiereCheckoutForm');
     if (form) {
-        form.addEventListener('submit', (e) => {
+        form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = document.getElementById('customerName')?.value || '';
             const phone = document.getElementById('customerPhone')?.value || '';
