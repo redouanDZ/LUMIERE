@@ -939,3 +939,23 @@ async function logoutCustomer() {
 
 // Run check on page load
 checkCustomerSession();
+
+
+// Mobile Drawer Handler
+function toggleMobileNav() {
+    const drawer = document.getElementById('mobileDrawer');
+    const overlay = document.getElementById('mobileDrawerOverlay');
+    if (!drawer || !overlay) return;
+
+    drawer.classList.toggle('active');
+    overlay.classList.toggle('active');
+}
+
+// Sync mobile cart badge whenever cart changes
+const originalUpdateCartUI = updateCartUI;
+updateCartUI = function() {
+    originalUpdateCartUI();
+    const count = cart.reduce((sum, item) => sum + item.qty, 0);
+    const mBadge = document.getElementById('mobileCartBadge');
+    if (mBadge) mBadge.textContent = count;
+};

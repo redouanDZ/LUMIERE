@@ -7,6 +7,13 @@
     <meta name="description" content="LUMIÈRE Paris — Ultra-pure botanical organic skincare and radiance rituals. Express delivery across the Gulf & Worldwide.">
     <link rel="stylesheet" href="css/lumiere.css">
     <link rel="icon" href="images/serum.jpg" type="image/jpeg">
+
+    <!-- Mobile & PWA Optimization -->
+    <meta name="theme-color" content="#C5A059">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    
 </head>
 <body>
 
@@ -24,7 +31,15 @@
                 <span class="logo-sub">BOTANICS • PARIS</span>
             </a>
 
-            <nav>
+            
+            <!-- Mobile Menu Hamburger Button -->
+            <button id="mobileMenuToggle" onclick="toggleMobileNav()" class="mobile-menu-btn" title="القائمة">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </button>
+    
+            <nav id="mainNav">
                 <ul class="nav-links">
                     <li><a href="#products" onclick="filterCategory('all')" class="nav-link active" data-i18n="navAll">جميع المستحضرات</a></li>
                     <li><a href="#products" onclick="filterCategory('serums')" class="nav-link" data-i18n="navSerums">السيرومات</a></li>
@@ -570,6 +585,63 @@
 
         </div>
     </div>
+    
+
+    <!-- Mobile Slide-Out Drawer Menu -->
+    <div id="mobileDrawerOverlay" class="mobile-drawer-overlay" onclick="toggleMobileNav()"></div>
+    <div id="mobileDrawer" class="mobile-drawer">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; border-bottom:1px solid rgba(197,160,89,0.2); padding-bottom:16px;">
+            <div>
+                <div class="logo-text" style="font-size:1.6rem; color:var(--accent-gold);">LUMIÈRE</div>
+                <div class="logo-sub" style="font-size:0.65rem;">PARIS • MOBILE</div>
+            </div>
+            <button onclick="toggleMobileNav()" style="background:none; border:none; color:#1C1917; font-size:1.6rem; cursor:pointer;">✕</button>
+        </div>
+
+        <ul style="list-style:none; display:flex; flex-direction:column; gap:16px; margin-bottom:28px;">
+            <li><a href="#products" onclick="filterCategory('all'); toggleMobileNav();" style="font-size:1.1rem; color:#1C1917; text-decoration:none; font-weight:600;">🌿 كافة المستحضرات</a></li>
+            <li><a href="#products" onclick="filterCategory('serums'); toggleMobileNav();" style="font-size:1.1rem; color:#1C1917; text-decoration:none; font-weight:600;">✨ السيرومات المركزة</a></li>
+            <li><a href="#products" onclick="filterCategory('creams'); toggleMobileNav();" style="font-size:1.1rem; color:#1C1917; text-decoration:none; font-weight:600;">🌸 الكريمات ومحيط العين</a></li>
+            <li><a href="#products" onclick="filterCategory('cleansers'); toggleMobileNav();" style="font-size:1.1rem; color:#1C1917; text-decoration:none; font-weight:600;">🫧 التنظيف والأقنعة</a></li>
+            <li><a href="#bundle" onclick="toggleMobileNav();" style="font-size:1.1rem; color:var(--accent-gold); text-decoration:none; font-weight:700;">💎 باقة الإشراقة الفاخرة (-30%)</a></li>
+        </ul>
+
+        <div style="padding-top:20px; border-top:1px solid #E7E5E4;">
+            <button onclick="openCustomerAuthModal(); toggleMobileNav();" class="btn-luxury" style="width:100%; justify-content:center; background:var(--accent-gold); color:#fff; margin-bottom:12px;">
+                👤 حسابي / تسجيل الدخول
+            </button>
+            <a href="https://wa.me/966500000000" target="_blank" class="btn-outline" style="width:100%; justify-content:center; text-decoration:none; border-color:#25D366; color:#25D366;">
+                💬 خدمة العملاء عبر واتساب
+            </a>
+        </div>
+    </div>
+
+    <!-- Mobile Bottom Sticky Floating Navigation Bar -->
+    <nav id="mobileBottomNav" class="mobile-bottom-nav">
+        <a href="#products" onclick="filterCategory('all')" class="bottom-nav-item active">
+            <span class="bottom-nav-icon">🛍️</span>
+            <span class="bottom-nav-label">المتجر</span>
+        </a>
+        <a href="#products" onclick="filterCategory('serums')" class="bottom-nav-item">
+            <span class="bottom-nav-icon">✨</span>
+            <span class="bottom-nav-label">السيروم</span>
+        </a>
+        <a href="javascript:void(0)" onclick="openCartDrawer()" class="bottom-nav-item cart-highlight">
+            <div style="position:relative;">
+                <span class="bottom-nav-icon">👜</span>
+                <span id="mobileCartBadge" class="mobile-badge">0</span>
+            </div>
+            <span class="bottom-nav-label">السلة</span>
+        </a>
+        <a href="javascript:void(0)" onclick="openCustomerAuthModal()" class="bottom-nav-item">
+            <span class="bottom-nav-icon">👤</span>
+            <span class="bottom-nav-label">حسابي</span>
+        </a>
+        <a href="https://wa.me/966500000000" target="_blank" class="bottom-nav-item">
+            <span class="bottom-nav-icon" style="color:#25D366;">💬</span>
+            <span class="bottom-nav-label">واتساب</span>
+        </a>
+    </nav>
     
 </body>
 </html>

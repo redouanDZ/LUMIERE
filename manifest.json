@@ -1,0 +1,22 @@
+{
+  "name": "LUMIÈRE Botanics Paris",
+  "short_name": "LUMIÈRE",
+  "description": "Ultra-pure botanical organic skincare and luxury radiance rituals",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#12100E",
+  "theme_color": "#C5A059",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "images/serum.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "images/serum.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}

@@ -39,6 +39,16 @@ app.use('/admin', express.static(path.join(__dirname, 'admin')));
 
 // API Routes
 app.use('/api', apiRoutes);
+// Cloud Health Check Endpoint
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'healthy',
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString(),
+        service: 'LUMIÈRE Botanics Cloud Platform'
+    });
+});
+
 
 // Root Fallback
 app.get('/', (req, res) => {
