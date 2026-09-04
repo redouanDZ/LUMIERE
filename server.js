@@ -44,6 +44,9 @@ app.use(cors({
     credentials: true
 }));
 
+// Trust reverse proxy for accurate IP determination in rate-limiting (Render, Nginx, Cloudflare)
+app.set('trust proxy', 1);
+
 // Rate Limiter: 100 requests per 15 minutes
 // Apply general API rate limiter
 app.use('/api/', apiLimiter);
@@ -53,9 +56,19 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Serve Static Frontend files
-app.use(express.static(path.join(__dirname)));
+// Block sensitive paths explicitly to prevent database or source code exposure
+app.use(['/data', '/src', '/scripts', '/tests', '/package.json', '/package-lock.json', '/Dockerfile', '/docker-compose.yml', '/render.yaml', '/SECURITY_NOTES.md'], (req, res) => {
+    res.status(403).json({ success: false, message: 'Access denied: Restricted resource' });
+});
+
+// Serve ONLY authorized public static assets
+app.use('/css', express.static(path.join(__dirname, 'css')));
+app.use('/js', express.static(path.join(__dirname, 'js')));
+app.use('/images', express.static(path.join(__dirname, 'images')));
 app.use('/admin', express.static(path.join(__dirname, 'admin')));
+app.get('/manifest.json', (req, res) => {
+    res.sendFile(path.join(__dirname, 'manifest.json'));
+});
 
 // API Routes
 app.use('/api', apiRoutes);

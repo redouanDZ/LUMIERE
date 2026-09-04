@@ -81,6 +81,9 @@ router.post('/coupons/validate', async (req, res) => {
     }
 });
 
+// Constant-time dummy hash to mitigate timing attacks on invalid account lookups
+const DUMMY_BCRYPT_HASH = '$2a$10$abcdefghijklmnopqrstuuabcdefghijklmnopqrstuuabcdefghijk';
+
 // Create Order
 router.post('/orders', orderLimiter, validateOrderInput, async (req, res) => {
     try {
@@ -92,7 +95,7 @@ router.post('/orders', orderLimiter, validateOrderInput, async (req, res) => {
             const customerToken = req.cookies?.lumiere_customer_token || req.headers['authorization']?.split(' ')[1];
             if (customerToken) {
                 const decoded = jwt.verify(customerToken, getJwtSecret());
-                if (decoded && decoded.id) {
+                if (decoded && decoded.id && decoded.role === 'customer') {
                     customerId = decoded.id;
                 }
             }
@@ -103,11 +106,21 @@ router.post('/orders', orderLimiter, validateOrderInput, async (req, res) => {
         let totalUsd = 0;
         const processedItems = [];
 
+        // Validate stock and calculate pricing
         for (const item of items) {
-            const dbProd = await query('SELECT * FROM products WHERE id = ?', [item.id]);
+            const dbProd = await query('SELECT * FROM products WHERE id = ? AND is_active = 1', [item.id]);
             if (dbProd.length > 0) {
                 const prod = dbProd[0];
-                const qty = Math.min(20, Math.max(1, parseInt(item.qty) || 1));
+                const qty = Math.min(20, Math.max(1, parseInt(item.qty, 10) || 1));
+
+                // Verify stock availability
+                if (prod.stock < qty) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `عذراً، الكمية المطلوبة من [${prod.title_ar}] غير متوفرة حالياً (المتوفر بالمخزن: ${prod.stock} قطع)`
+                    });
+                }
+
                 totalUsd += prod.price_usd * qty;
                 processedItems.push({
                     id: prod.id,
@@ -118,13 +131,28 @@ router.post('/orders', orderLimiter, validateOrderInput, async (req, res) => {
             }
         }
 
+        if (processedItems.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'سلة المشتريات لا تحتوي على منتجات صالحة'
+            });
+        }
+
         let discount = 0;
+        let appliedCouponId = null;
         if (couponCode) {
             const coup = await query('SELECT * FROM coupons WHERE code = ? AND is_active = 1', [couponCode]);
             if (coup.length > 0) {
-                discount = coup[0].discount_percent;
+                const c = coup[0];
+                if (c.max_uses && c.used_count >= c.max_uses) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'عذراً، لقد تم استنفاد الحد الأقصى لاستخدام رمز الخصم هذا'
+                    });
+                }
+                discount = c.discount_percent;
                 totalUsd = totalUsd * (1 - (discount / 100));
-                await run('UPDATE coupons SET used_count = used_count + 1 WHERE id = ?', [coup[0].id]);
+                appliedCouponId = c.id;
             }
         }
 
@@ -159,32 +187,60 @@ router.post('/orders', orderLimiter, validateOrderInput, async (req, res) => {
             }
         }
 
+        // Deduct stock for all ordered products
+        for (const item of processedItems) {
+            await run('UPDATE products SET stock = MAX(0, stock - ?) WHERE id = ?', [item.qty, item.id]);
+        }
+
+        // Increment coupon use count if applied
+        if (appliedCouponId) {
+            await run('UPDATE coupons SET used_count = used_count + 1 WHERE id = ?', [appliedCouponId]);
+        }
+
+        // Award reward points if registered customer
+        if (customerId) {
+            await run('UPDATE customers SET reward_points = reward_points + 10 WHERE id = ?', [customerId]);
+        }
+
         res.status(201).json({
             success: true,
             orderId: result.lastID,
             orderNumber,
             totalLocal,
             currency,
-            message: 'Order created successfully'
+            message: 'تم إنشاء الطلب بنجاح وتم خصم المخزون'
         });
     } catch (err) {
         safeError(res, err);
     }
 });
 
-// Admin Auth
+// Admin Auth: Login with strict input validation, timing attack defense, and rate-limiting
 router.post('/auth/login', authLimiter, async (req, res) => {
     try {
         const { email, password } = req.body;
-        const users = await query('SELECT * FROM users WHERE email = ?', [email]);
+
+        if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
+            return res.status(400).json({ success: false, message: 'البريد الإلكتروني وكلمة المرور مطلوبان بصيغة صحيحة' });
+        }
+
+        if (password.length > 128) {
+            return res.status(400).json({ success: false, message: 'كلمة المرور تتجاوز الحد المسموح' });
+        }
+
+        const cleanEmail = email.trim().toLowerCase();
+        const users = await query('SELECT * FROM users WHERE LOWER(email) = ?', [cleanEmail]);
+
         if (users.length === 0) {
-            return res.status(401).json({ success: false, message: 'Invalid email or password' });
+            // Constant-time execution to prevent email enumeration via timing attacks
+            await bcrypt.compare(password, DUMMY_BCRYPT_HASH);
+            return res.status(401).json({ success: false, message: 'بيانات الدخول غير صحيحة' });
         }
 
         const user = users[0];
         const match = await bcrypt.compare(password, user.password_hash);
         if (!match) {
-            return res.status(401).json({ success: false, message: 'Invalid email or password' });
+            return res.status(401).json({ success: false, message: 'بيانات الدخول غير صحيحة' });
         }
 
         const token = jwt.sign(
@@ -204,6 +260,39 @@ router.post('/auth/login', authLimiter, async (req, res) => {
             success: true,
             user: { id: user.id, name: user.name, email: user.email, role: user.role }
         });
+    } catch (err) {
+        safeError(res, err);
+    }
+});
+
+// Admin Auth: Change Password
+router.post('/admin/change-password', requireAdmin, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword || typeof currentPassword !== 'string' || typeof newPassword !== 'string') {
+            return res.status(400).json({ success: false, message: 'كلمة المرور الحالية والجديدة مطلوبتان' });
+        }
+
+        if (newPassword.length < 8 || newPassword.length > 128) {
+            return res.status(400).json({ success: false, message: 'كلمة المرور الجديدة يجب أن تتراوح بين 8 و 128 حرفاً' });
+        }
+
+        const users = await query('SELECT * FROM users WHERE id = ?', [req.user.id]);
+        if (users.length === 0) {
+            return res.status(404).json({ success: false, message: 'المستخدم غير موجود' });
+        }
+
+        const user = users[0];
+        const match = await bcrypt.compare(currentPassword, user.password_hash);
+        if (!match) {
+            return res.status(400).json({ success: false, message: 'كلمة المرور الحالية غير صحيحة' });
+        }
+
+        const newHash = await bcrypt.hash(newPassword, 12);
+        await run('UPDATE users SET password_hash = ? WHERE id = ?', [newHash, req.user.id]);
+
+        res.json({ success: true, message: 'تم تحديث كلمة مرور المدير بنجاح' });
     } catch (err) {
         safeError(res, err);
     }
@@ -399,22 +488,34 @@ router.delete('/admin/orders/:id', requireAdmin, async (req, res) => {
 // CUSTOMER AUTH & PORTAL APIS
 // ==========================================
 
+// Email validation regex (standard RFC 5322 compatible format)
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 // Customer Register
 router.post('/customer/register', authLimiter, async (req, res) => {
     try {
         let { name, email, password, phone, country, city, address } = req.body;
-        name = sanitizeString(name);
-        email = sanitizeString(email).toLowerCase();
-        phone = sanitizeString(phone);
-        country = sanitizeString(country) || 'Saudi Arabia';
-        city = sanitizeString(city) || 'Riyadh';
-        address = sanitizeString(address) || '';
 
-        if (!name || name.length < 2) return res.status(400).json({ success: false, message: 'الاسم مطلوب' });
-        if (!email || !email.includes('@')) return res.status(400).json({ success: false, message: 'بريد إلكتروني غير صالح' });
-        if (!password || password.length < 6) return res.status(400).json({ success: false, message: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' });
+        if (!name || typeof name !== 'string' || name.trim().length < 2) {
+            return res.status(400).json({ success: false, message: 'الاسم الكامل مطلوب (حرفين على الأقل)' });
+        }
 
-        const existing = await query('SELECT id FROM customers WHERE email = ?', [email]);
+        if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim())) {
+            return res.status(400).json({ success: false, message: 'يرجى إدخال بريد إلكتروني صالح' });
+        }
+
+        if (!password || typeof password !== 'string' || password.length < 6 || password.length > 128) {
+            return res.status(400).json({ success: false, message: 'كلمة المرور يجب أن تتراوح بين 6 و 128 حرفاً' });
+        }
+
+        const cleanName = sanitizeString(name);
+        const cleanEmail = email.trim().toLowerCase();
+        const cleanPhone = sanitizeString(phone || '');
+        const cleanCountry = sanitizeString(country || 'Saudi Arabia');
+        const cleanCity = sanitizeString(city || 'Riyadh');
+        const cleanAddress = sanitizeString(address || '');
+
+        const existing = await query('SELECT id FROM customers WHERE LOWER(email) = ?', [cleanEmail]);
         if (existing.length > 0) {
             return res.status(400).json({ success: false, message: 'هذا البريد الإلكتروني مسجل بالفعل' });
         }
@@ -423,10 +524,10 @@ router.post('/customer/register', authLimiter, async (req, res) => {
         const result = await run(`
             INSERT INTO customers (name, email, password_hash, phone, country, city, address, reward_points)
             VALUES (?, ?, ?, ?, ?, ?, ?, 100)
-        `, [name, email, password_hash, phone, country, city, address]);
+        `, [cleanName, cleanEmail, password_hash, cleanPhone, cleanCountry, cleanCity, cleanAddress]);
 
         const token = jwt.sign(
-            { id: result.lastID, name, email, role: 'customer' },
+            { id: result.lastID, name: cleanName, email: cleanEmail, role: 'customer' },
             getJwtSecret(),
             { expiresIn: '30d' }
         );
@@ -440,7 +541,7 @@ router.post('/customer/register', authLimiter, async (req, res) => {
 
         res.status(201).json({
             success: true,
-            customer: { id: result.lastID, name, email, phone, country, city, address, reward_points: 100 },
+            customer: { id: result.lastID, name: cleanName, email: cleanEmail, phone: cleanPhone, country: cleanCountry, city: cleanCity, address: cleanAddress, reward_points: 100 },
             message: 'تم إنشاء الحساب بنجاح وتمت إضافة 100 نقطة ترحيبية 🎁'
         });
     } catch (err) {
@@ -452,10 +553,21 @@ router.post('/customer/register', authLimiter, async (req, res) => {
 router.post('/customer/login', authLimiter, async (req, res) => {
     try {
         let { email, password } = req.body;
-        email = sanitizeString(email).toLowerCase();
 
-        const customers = await query('SELECT * FROM customers WHERE email = ?', [email]);
+        if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
+            return res.status(400).json({ success: false, message: 'البريد أو كلمة المرور غير صحيحة' });
+        }
+
+        if (password.length > 128) {
+            return res.status(400).json({ success: false, message: 'بيانات غير صالحة' });
+        }
+
+        const cleanEmail = email.trim().toLowerCase();
+        const customers = await query('SELECT * FROM customers WHERE LOWER(email) = ?', [cleanEmail]);
+
         if (customers.length === 0) {
+            // Constant-time execution to prevent timing attack enumeration
+            await bcrypt.compare(password, DUMMY_BCRYPT_HASH);
             return res.status(401).json({ success: false, message: 'البريد أو كلمة المرور غير صحيحة' });
         }
 
@@ -509,6 +621,10 @@ router.get('/customer/me', async (req, res) => {
         if (!token) return res.status(200).json({ success: false, authenticated: false, message: 'غير مسجل الدخول' });
 
         const decoded = jwt.verify(token, getJwtSecret());
+        if (!decoded || decoded.role !== 'customer') {
+            return res.status(200).json({ success: false, authenticated: false, message: 'غير مسجل الدخول' });
+        }
+
         const customers = await query('SELECT id, name, email, phone, country, city, address, reward_points FROM customers WHERE id = ?', [decoded.id]);
         if (customers.length === 0) return res.status(200).json({ success: false, authenticated: false, message: 'العميل غير موجود' });
 
@@ -538,6 +654,10 @@ router.put('/customer/me', async (req, res) => {
         if (!token) return res.status(401).json({ success: false, message: 'غير مسجل الدخول' });
 
         const decoded = jwt.verify(token, getJwtSecret());
+        if (!decoded || decoded.role !== 'customer') {
+            return res.status(403).json({ success: false, message: 'صلاحيات غير كافية' });
+        }
+
         let { name, phone, country, city, address } = req.body;
 
         name = sanitizeString(name);

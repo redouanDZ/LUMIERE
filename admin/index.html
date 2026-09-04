@@ -107,7 +107,10 @@
                         <div style="font-size: 0.75rem; color: var(--gold);">Executive Admin</div>
                     </div>
                 </div>
-                <button onclick="logoutAdmin()" class="btn-outline-gold" style="padding: 6px 12px; font-size: 0.8rem;">خروج</button>
+                <div style="display: flex; gap: 6px;">
+                    <button onclick="openChangePasswordModal()" class="btn-outline-gold" style="padding: 6px 10px; font-size: 0.8rem;">تغيير الرمز 🔑</button>
+                    <button onclick="logoutAdmin()" class="btn-outline-gold" style="padding: 6px 10px; font-size: 0.8rem;">خروج</button>
+                </div>
             </div>
         </div>
     </aside>
@@ -415,6 +418,28 @@
                 </div>
                 <button type="submit" class="btn-gold" style="width: 100%; justify-content: center; padding: 12px; margin-top: 10px;">إضافة المنتج إلى المتجر 🧴</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="changePasswordModal" class="modal-overlay">
+        <div class="modal-box" style="max-width: 440px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h3 class="section-title">تغيير كلمة مرور المدير</h3>
+                <button onclick="closeChangePasswordModal()" style="background:none; border:none; color:var(--text-secondary); font-size:1.5rem; cursor:pointer;">✕</button>
+            </div>
+            <form id="changePasswordForm">
+                <div class="form-group">
+                    <label>كلمة المرور الحالية</label>
+                    <input type="password" id="currentPassInput" class="form-control" placeholder="••••••••" required>
+                </div>
+                <div class="form-group">
+                    <label>كلمة المرور الجديدة (8 أحرف أو أكثر)</label>
+                    <input type="password" id="newPassInput" class="form-control" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-gold" style="width: 100%; justify-content: center; padding: 12px; margin-top: 10px;">تحديث كلمة المرور 🔐</button>
+            </form>
+            <div id="changePassMsg" style="margin-top: 14px; text-align: center; font-size: 0.85rem;"></div>
         </div>
     </div>
 

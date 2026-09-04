@@ -68,6 +68,7 @@ async function loadAllData() {
         const res = await fetch('/api/admin/stats');
         const data = await res.json();
         if (data.success) {
+            document.getElementById('loginScreen').style.display = 'none';
             cachedData = data;
             renderOverview(data);
             renderOrders(data.recentOrders);
@@ -197,7 +198,7 @@ async function loadProducts() {
                     <td><span class="badge" style="background:rgba(16,185,129,0.15); color:#34D399;">${p.stock} قطعة</span></td>
                     <td>⭐ ${p.rating} (${p.reviews_count})</td>
                     <td style="display:flex; gap:8px;">
-                        <button onclick="openProductModal('${p.id}', '${p.title_ar}', ${p.price_usd}, ${p.stock})" class="btn-outline-gold" style="padding:4px 10px; font-size:0.8rem;">تعديل</button>
+                        <button onclick="handleEditProductClick(this)" data-id="${p.id}" data-title="${encodeURIComponent(p.title_ar)}" data-price="${p.price_usd}" data-stock="${p.stock}" class="btn-outline-gold" style="padding:4px 10px; font-size:0.8rem;">تعديل</button>
                         <button onclick="deleteProduct('${p.id}')" class="btn-delete" title="حذف المستحضر">🗑️</button>
                     </td>
                 </tr>
@@ -206,6 +207,15 @@ async function loadProducts() {
     } catch (err) {
         console.error(err);
     }
+}
+
+function handleEditProductClick(btn) {
+    openProductModal(
+        btn.getAttribute('data-id'),
+        decodeURIComponent(btn.getAttribute('data-title')),
+        parseFloat(btn.getAttribute('data-price')),
+        parseInt(btn.getAttribute('data-stock'), 10)
+    );
 }
 
 async function deleteProduct(productId) {
@@ -279,7 +289,7 @@ async function loadCoupons() {
                         </button>
                     </td>
                     <td>
-                        <button onclick="deleteCoupon(${c.id}, '${c.code}')" class="btn-delete" title="حذف الكوبون نهائياً">
+                        <button onclick="handleDeleteCouponClick(this)" data-id="${c.id}" data-code="${encodeURIComponent(c.code)}" class="btn-delete" title="حذف الكوبون نهائياً">
                             حذف 🗑️
                         </button>
                     </td>
@@ -289,6 +299,12 @@ async function loadCoupons() {
     } catch (err) {
         console.error(err);
     }
+}
+
+function handleDeleteCouponClick(btn) {
+    const id = btn.getAttribute('data-id');
+    const code = decodeURIComponent(btn.getAttribute('data-code'));
+    deleteCoupon(id, code);
 }
 
 // DELETE COUPON
@@ -464,5 +480,49 @@ function exportOrdersCSV() {
     link.download = 'LUMIERE_Orders_' + new Date().toISOString().slice(0, 10) + '.csv';
     link.click();
 }
+
+// Change Password Handling
+function openChangePasswordModal() {
+    const msg = document.getElementById('changePassMsg');
+    if (msg) msg.textContent = '';
+    const form = document.getElementById('changePasswordForm');
+    if (form) form.reset();
+    const modal = document.getElementById('changePasswordModal');
+    if (modal) modal.classList.add('active');
+}
+
+function closeChangePasswordModal() {
+    const modal = document.getElementById('changePasswordModal');
+    if (modal) modal.classList.remove('active');
+}
+
+document.getElementById('changePasswordForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const currentPassword = document.getElementById('currentPassInput').value;
+    const newPassword = document.getElementById('newPassInput').value;
+    const msg = document.getElementById('changePassMsg');
+
+    try {
+        const res = await fetch('/api/admin/change-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ currentPassword, newPassword })
+        });
+        const data = await res.json();
+        if (data.success) {
+            msg.style.color = '#34D399';
+            msg.textContent = data.message;
+            setTimeout(() => {
+                closeChangePasswordModal();
+            }, 1800);
+        } else {
+            msg.style.color = '#F87171';
+            msg.textContent = data.message || 'فشل تحديث كلمة المرور';
+        }
+    } catch (err) {
+        msg.style.color = '#F87171';
+        msg.textContent = 'حدث خطأ أثناء الاتصال بالخادم';
+    }
+});
 
 initDashboard();

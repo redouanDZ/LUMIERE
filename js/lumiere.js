@@ -376,6 +376,8 @@ let currentLang = 'ar';
 let currentCurrency = 'SAR';
 let currentCategory = 'all';
 let discountPercent = 0;
+let appliedCouponCode = '';
+let storeConfig = null;
 let cart = [];
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -384,7 +386,78 @@ document.addEventListener('DOMContentLoaded', () => {
     updateTranslations();
     setupEventListeners();
     initSocialProof();
+    loadStoreConfig();
+    loadDynamicProducts();
 });
+
+async function loadStoreConfig() {
+    try {
+        const res = await fetch('/api/config');
+        const data = await res.json();
+        if (data.success && data.data) {
+            storeConfig = data.data;
+            updateFooterWhatsapp();
+        }
+    } catch (e) {
+        console.warn('Config load fallback');
+    }
+}
+
+function updateFooterWhatsapp() {
+    const waNumber = storeConfig?.contact?.whatsappNumber || '+966500000000';
+    const cleanNumber = waNumber.replace(/[^0-9]/g, '');
+    const links = document.querySelectorAll('a[href*="wa.me"]');
+    links.forEach(a => {
+        if (!a.id || a.id !== 'btnWhatsAppCheckout') {
+            a.href = `https://wa.me/${cleanNumber}`;
+        }
+    });
+}
+
+async function loadDynamicProducts() {
+    try {
+        const res = await fetch('/api/products');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+            const dbMap = {};
+            data.data.forEach(dbP => {
+                dbMap[dbP.id] = dbP;
+            });
+            PRODUCTS.forEach(p => {
+                if (dbMap[p.id]) {
+                    p.basePriceUsd = dbMap[p.id].price_usd;
+                    p.originalPriceUsd = dbMap[p.id].original_price_usd || (dbMap[p.id].price_usd * 1.3);
+                    p.stock = dbMap[p.id].stock;
+                    if (dbMap[p.id].title_ar) p.title.ar = dbMap[p.id].title_ar;
+                    if (dbMap[p.id].title_en) p.title.en = dbMap[p.id].title_en;
+                    delete dbMap[p.id];
+                }
+            });
+            Object.values(dbMap).forEach(newP => {
+                PRODUCTS.push({
+                    id: newP.id,
+                    categoryKey: newP.category_key,
+                    title: { ar: newP.title_ar, en: newP.title_en || newP.title_ar },
+                    category: { ar: newP.category_ar || 'عناية فاخرة', en: newP.category_en || 'Luxury Care' },
+                    desc: { ar: newP.desc_ar || '', en: newP.desc_en || newP.desc_ar || '' },
+                    benefits: { ar: newP.benefits_ar || '', en: newP.benefits_en || '' },
+                    usage: { ar: newP.usage_ar || '', en: newP.usage_en || '' },
+                    ingredients: newP.ingredients || '',
+                    basePriceUsd: newP.price_usd,
+                    originalPriceUsd: newP.original_price_usd || (newP.price_usd * 1.3),
+                    rating: newP.rating || '5.0',
+                    reviews: newP.reviews_count || 0,
+                    stock: newP.stock || 50,
+                    image: newP.image || 'images/serum.jpg',
+                    badge: { ar: newP.badge_ar || 'جديد', en: newP.badge_en || 'New' }
+                });
+            });
+            renderProducts();
+        }
+    } catch (e) {
+        console.warn('Dynamic products load fallback:', e);
+    }
+}
 
 function formatPrice(usdPrice) {
     const cur = CURRENCIES[currentCurrency];
@@ -557,21 +630,47 @@ function renderCart() {
     `).join('');
 }
 
-function applyCoupon() {
+async function applyCoupon() {
     const input = document.getElementById('couponCodeInput');
     const code = input ? input.value.trim().toUpperCase() : '';
     const msg = document.getElementById('couponNotice');
-    
-    if (code === 'GLOW10' || code === 'LUMIERE10') {
-        discountPercent = 10;
-        if (msg) {
-            msg.textContent = currentLang === 'ar' ? '✓ تم تطبيق خصم 10% بنجاح!' : '✓ 10% discount applied!';
-            msg.style.color = '#10B981';
-        }
-    } else {
+
+    if (!code) {
         discountPercent = 0;
+        appliedCouponCode = '';
+        if (msg) msg.textContent = '';
+        renderCart();
+        renderProducts();
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/coupons/validate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code })
+        });
+        const data = await res.json();
+        if (data.success) {
+            discountPercent = data.discountPercent;
+            appliedCouponCode = data.code;
+            if (msg) {
+                msg.textContent = currentLang === 'ar' ? `✓ تم تطبيق خصم ${discountPercent}% بنجاح!` : `✓ ${discountPercent}% discount applied!`;
+                msg.style.color = '#10B981';
+            }
+        } else {
+            discountPercent = 0;
+            appliedCouponCode = '';
+            if (msg) {
+                msg.textContent = data.message || (currentLang === 'ar' ? 'رمز غير صالح أو منتهي' : 'Invalid or expired code');
+                msg.style.color = '#EF4444';
+            }
+        }
+    } catch (e) {
+        discountPercent = 0;
+        appliedCouponCode = '';
         if (msg) {
-            msg.textContent = currentLang === 'ar' ? 'رمز غير صالح. جرب GLOW10' : 'Invalid code. Try GLOW10';
+            msg.textContent = currentLang === 'ar' ? 'تعذر التحقق من الكوبون' : 'Could not validate coupon';
             msg.style.color = '#EF4444';
         }
     }
@@ -709,6 +808,11 @@ function setupEventListeners() {
     if (form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (cart.length === 0) {
+                alert(currentLang === 'ar' ? 'سلة المشتريات فارغة!' : 'Your cart is empty!');
+                return;
+            }
+
             const name = document.getElementById('customerName')?.value || '';
             const phone = document.getElementById('customerPhone')?.value || '';
             const country = document.getElementById('customerCountry')?.value || '';
@@ -717,29 +821,94 @@ function setupEventListeners() {
 
             const subtotal = cart.reduce((sum, item) => sum + (item.basePriceUsd * item.qty), 0);
             const formattedTotal = formatPrice(subtotal);
-
             const msgBox = document.getElementById('orderConfirmationNotice');
-            if (msgBox) {
-                msgBox.style.display = 'block';
-                msgBox.innerHTML = '<div style="background: #ECFDF5; border: 1px solid #10B981; color: #065F46; padding: 16px; border-radius: 12px; margin-top: 16px; text-align: center;">' +
-                    '<h4 style="font-size: 1.1rem; margin-bottom: 6px;">' + TRANSLATIONS[currentLang].orderSuccess + '</h4>' +
-                    '<p style="font-size: 0.9rem;">' + name + ' | ' + phone + ' | ' + country + ' (' + city + ')</p>' +
-                    '<p style="font-weight: 700; margin-top: 6px;">' + TRANSLATIONS[currentLang].cartTotal + ' ' + formattedTotal + '</p>' +
-                    '</div>';
+
+            // Construct payload for POST /api/orders
+            const orderPayload = {
+                name,
+                phone,
+                country,
+                city,
+                address,
+                paymentMethod: 'cod',
+                currency: currentCurrency,
+                couponCode: appliedCouponCode || '',
+                items: cart.map(item => ({ id: item.id, qty: item.qty }))
+            };
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn ? submitBtn.innerHTML : '';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = currentLang === 'ar' ? 'جاري تأكيد الطلب وحجز المخزون...' : 'Processing order...';
             }
 
-            const itemsSummary = cart.map(i => i.title[currentLang] + ' (×' + i.qty + ')').join(', ');
-            const waText = encodeURIComponent('مرحباً LUMIÈRE، أود تأكيد طلبي:\nالاسم: ' + name + '\nالهاتف: ' + phone + '\nالدولة/المدينة: ' + country + ' - ' + city + '\nالعنوان: ' + address + '\nالمنتجات: ' + itemsSummary + '\nالمجموع: ' + formattedTotal);
-            
-            const waBtn = document.getElementById('btnWhatsAppCheckout');
-            if (waBtn) {
-                waBtn.href = 'https://wa.me/213669754875?text=' + waText;
-                waBtn.style.display = 'inline-flex';
-            }
+            try {
+                const res = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(orderPayload)
+                });
+                const data = await res.json();
 
-            cart = [];
-            saveCart();
-            renderCart();
+                if (data.success) {
+                    const orderNum = data.orderNumber;
+                    if (msgBox) {
+                        msgBox.style.display = 'block';
+                        msgBox.innerHTML = `
+                            <div style="background: #ECFDF5; border: 1px solid #10B981; color: #065F46; padding: 18px; border-radius: 12px; margin-top: 16px; text-align: center;">
+                                <div style="font-size: 1.5rem; margin-bottom: 4px;">🎉</div>
+                                <h4 style="font-size: 1.15rem; margin-bottom: 6px; font-weight: 700;">${TRANSLATIONS[currentLang].orderSuccess}</h4>
+                                <p style="font-size: 0.95rem; margin-bottom: 4px;">رقم الطلب الرسمي: <strong style="color: var(--accent-gold);">${orderNum}</strong></p>
+                                <p style="font-size: 0.85rem; color: #047857;">${name} | ${phone} | ${country} (${city})</p>
+                                <p style="font-weight: 700; margin-top: 8px; font-size: 1.05rem;">${TRANSLATIONS[currentLang].cartTotal} ${data.totalLocal} ${data.currency}</p>
+                            </div>
+                        `;
+                    }
+
+                    const itemsSummary = cart.map(i => i.title[currentLang] + ' (×' + i.qty + ')').join(', ');
+                    const waPhone = (storeConfig?.contact?.whatsappNumber || '+966500000000').replace(/[^0-9]/g, '');
+                    const waText = encodeURIComponent(`مرحباً LUMIÈRE 🌸، تم تأكيد طلبي بنجاح:\nرقم الطلب: ${orderNum}\nالاسم: ${name}\nالهاتف: ${phone}\nالموقع: ${country} - ${city}\nالعنوان: ${address}\nالمنتجات: ${itemsSummary}\nالمجموع: ${data.totalLocal} ${data.currency}`);
+
+                    const waBtn = document.getElementById('btnWhatsAppCheckout');
+                    if (waBtn) {
+                        waBtn.href = `https://wa.me/${waPhone}?text=${waText}`;
+                        waBtn.style.display = 'inline-flex';
+                    }
+
+                    // Refresh customer profile orders if customer is logged in
+                    if (currentCustomer) {
+                        checkCustomerSession();
+                    }
+
+                    cart = [];
+                    saveCart();
+                    renderCart();
+                } else {
+                    if (msgBox) {
+                        msgBox.style.display = 'block';
+                        msgBox.innerHTML = `
+                            <div style="background: #FEF2F2; border: 1px solid #EF4444; color: #991B1B; padding: 14px; border-radius: 12px; margin-top: 16px; text-align: center; font-size: 0.9rem;">
+                                ⚠️ ${data.message || 'فشل تسجيل الطلب. يرجى مراجعة البيانات.'}
+                            </div>
+                        `;
+                    }
+                }
+            } catch (err) {
+                if (msgBox) {
+                    msgBox.style.display = 'block';
+                    msgBox.innerHTML = `
+                        <div style="background: #FEF2F2; border: 1px solid #EF4444; color: #991B1B; padding: 14px; border-radius: 12px; margin-top: 16px; text-align: center; font-size: 0.9rem;">
+                            ⚠️ تعذر الاتصال بالخادم لإتمام الطلب. يرجى المحاولة لاحقاً.
+                        </div>
+                    `;
+                }
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalBtnText;
+                }
+            }
         });
     }
 }
@@ -856,6 +1025,7 @@ document.getElementById('customerLoginForm')?.addEventListener('submit', async (
         });
         const data = await res.json();
         if (data.success) {
+            e.target.reset();
             setLoggedInCustomer(data.customer);
             openCustomerAuthModal();
         } else {
@@ -886,6 +1056,7 @@ document.getElementById('customerRegisterForm')?.addEventListener('submit', asyn
         });
         const data = await res.json();
         if (data.success) {
+            e.target.reset();
             setLoggedInCustomer(data.customer);
             openCustomerAuthModal();
         } else {
