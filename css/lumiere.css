@@ -1,4 +1,4 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    LUMIÈRE BOTANICS — Luxury International Skincare Flagship Platform
    ========================================================================== */
 
@@ -1292,7 +1292,6 @@ body {
     backdrop-filter: blur(14px);
     border-top: 1px solid rgba(197, 160, 89, 0.3);
     z-index: 999;
-    display: flex;
     justify-content: space-around;
     align-items: center;
     padding: 0 10px;
