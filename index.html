@@ -493,8 +493,6 @@
         </div>
     </footer>
 
-    <script src="js/lumiere.js"></script>
-
     <!-- Luxury Customer Auth & Portal Modal -->
     <div id="customerModal" class="modal-overlay">
         <div class="modal-box" style="background:#FAF7F2; color:#1C1917; border:1px solid var(--accent-gold); max-width: 520px; border-radius: 20px; padding: 32px; box-shadow: 0 25px 60px rgba(0,0,0,0.3);">
@@ -516,7 +514,7 @@
                 </div>
 
                 <!-- LOGIN FORM -->
-                <form id="customerLoginForm">
+                <form id="customerLoginForm" action="javascript:void(0);" onsubmit="return handleCustomerLogin(event)">
                     <div class="form-group" style="margin-bottom: 16px;">
                         <label style="font-size: 0.85rem; font-weight: 600; color: #44403C;">البريد الإلكتروني</label>
                         <input type="email" id="custLoginEmail" class="form-input" style="background: #fff; border: 1px solid #D6D3D1; color: #1C1917;" placeholder="name@example.com" required>
@@ -531,7 +529,7 @@
                 </form>
 
                 <!-- REGISTER FORM -->
-                <form id="customerRegisterForm" style="display: none;">
+                <form id="customerRegisterForm" action="javascript:void(0);" onsubmit="return handleCustomerRegister(event)" style="display: none;">
                     <div class="form-group" style="margin-bottom: 12px;">
                         <label style="font-size: 0.85rem; font-weight: 600; color: #44403C;">الاسم الكامل</label>
                         <input type="text" id="custRegName" class="form-input" style="background: #fff; border: 1px solid #D6D3D1; color: #1C1917;" placeholder="الاسم الكامل" required>
@@ -644,5 +642,6 @@
         </a>
     </nav>
     
+    <script src="js/lumiere.js" defer></script>
 </body>
 </html>

@@ -1011,11 +1011,21 @@ function switchAuthMode(mode) {
 }
 
 // Handle Customer Login
-document.getElementById('customerLoginForm')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('custLoginEmail').value;
-    const password = document.getElementById('custLoginPassword').value;
+async function handleCustomerLogin(e) {
+    if (e) e.preventDefault();
+    const emailInput = document.getElementById('custLoginEmail');
+    const passInput = document.getElementById('custLoginPassword');
     const msg = document.getElementById('custAuthMsg');
+    if (!emailInput || !passInput) return false;
+
+    const email = emailInput.value.trim();
+    const password = passInput.value;
+    if (!email || !password) return false;
+
+    if (msg) {
+        msg.style.color = '#78716C';
+        msg.textContent = 'جاري التحقق...';
+    }
 
     try {
         const res = await fetch('/api/customer/login', {
@@ -1025,28 +1035,46 @@ document.getElementById('customerLoginForm')?.addEventListener('submit', async (
         });
         const data = await res.json();
         if (data.success) {
-            e.target.reset();
+            document.getElementById('customerLoginForm')?.reset();
             setLoggedInCustomer(data.customer);
             openCustomerAuthModal();
         } else {
-            msg.style.color = '#DC2626';
-            msg.textContent = data.message;
+            if (msg) {
+                msg.style.color = '#DC2626';
+                msg.textContent = data.message || 'بيانات الدخول غير صحيحة';
+            }
         }
     } catch (err) {
-        msg.style.color = '#DC2626';
-        msg.textContent = 'حدث خطأ أثناء الاتصال بالخادم';
+        if (msg) {
+            msg.style.color = '#DC2626';
+            msg.textContent = 'حدث خطأ أثناء الاتصال بالخادم';
+        }
     }
-});
+    return false;
+}
 
 // Handle Customer Register
-document.getElementById('customerRegisterForm')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('custRegName').value;
-    const email = document.getElementById('custRegEmail').value;
-    const phone = document.getElementById('custRegPhone').value;
-    const city = document.getElementById('custRegCity').value;
-    const password = document.getElementById('custRegPassword').value;
+async function handleCustomerRegister(e) {
+    if (e) e.preventDefault();
+    const nameInput = document.getElementById('custRegName');
+    const emailInput = document.getElementById('custRegEmail');
+    const phoneInput = document.getElementById('custRegPhone');
+    const cityInput = document.getElementById('custRegCity');
+    const passInput = document.getElementById('custRegPassword');
     const msg = document.getElementById('custAuthMsg');
+
+    if (!nameInput || !emailInput || !passInput) return false;
+
+    const name = nameInput.value.trim();
+    const email = emailInput.value.trim();
+    const phone = phoneInput ? phoneInput.value.trim() : '';
+    const city = cityInput ? cityInput.value.trim() : '';
+    const password = passInput.value;
+
+    if (msg) {
+        msg.style.color = '#78716C';
+        msg.textContent = 'جاري إنشاء حسابك...';
+    }
 
     try {
         const res = await fetch('/api/customer/register', {
@@ -1056,18 +1084,44 @@ document.getElementById('customerRegisterForm')?.addEventListener('submit', asyn
         });
         const data = await res.json();
         if (data.success) {
-            e.target.reset();
+            document.getElementById('customerRegisterForm')?.reset();
             setLoggedInCustomer(data.customer);
             openCustomerAuthModal();
         } else {
-            msg.style.color = '#DC2626';
-            msg.textContent = data.message;
+            if (msg) {
+                msg.style.color = '#DC2626';
+                msg.textContent = data.message || 'حدث خطأ أثناء التسجيل';
+            }
         }
     } catch (err) {
-        msg.style.color = '#DC2626';
-        msg.textContent = 'حدث خطأ أثناء إنشاء الحساب';
+        if (msg) {
+            msg.style.color = '#DC2626';
+            msg.textContent = 'حدث خطأ أثناء إنشاء الحساب';
+        }
     }
-});
+    return false;
+}
+
+window.handleCustomerLogin = handleCustomerLogin;
+window.handleCustomerRegister = handleCustomerRegister;
+
+// Bind submit handlers immediately and on DOMContentLoaded
+function bindCustomerAuthForms() {
+    const loginF = document.getElementById('customerLoginForm');
+    const regF = document.getElementById('customerRegisterForm');
+    if (loginF && !loginF._bound) {
+        loginF.addEventListener('submit', handleCustomerLogin);
+        loginF._bound = true;
+    }
+    if (regF && !regF._bound) {
+        regF.addEventListener('submit', handleCustomerRegister);
+        regF._bound = true;
+    }
+}
+bindCustomerAuthForms();
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindCustomerAuthForms);
+}
 
 async function loadCustomerOrders() {
     try {
