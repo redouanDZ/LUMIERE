@@ -66,12 +66,18 @@
         </div>
     </div>
 
+    <!-- Admin Mobile Sidebar Overlay -->
+    <div id="adminSidebarOverlay" class="admin-sidebar-overlay" onclick="toggleAdminSidebar()"></div>
+
     <!-- Sidebar -->
     <aside class="admin-sidebar">
         <div>
-            <div class="brand-logo">
-                <div class="brand-title">LUMIÈRE</div>
-                <span class="brand-badge">CRUD Operations</span>
+            <div class="brand-logo" style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div class="brand-title">LUMIÈRE</div>
+                    <span class="brand-badge">CRUD Operations</span>
+                </div>
+                <button class="sidebar-close-btn" onclick="toggleAdminSidebar()" title="إغلاق القائمة">✕</button>
             </div>
 
             <ul class="nav-menu">
@@ -120,9 +126,12 @@
         
         <!-- Top Bar -->
         <header class="top-bar">
-            <div class="page-heading">
-                <h1 id="tabHeading">نظرة عامة والتحليلات الحية</h1>
-                <p id="tabSubHeading">مؤشرات الأداء، التدفق المالي الخليجي والدولي، وحركة الطلبيات</p>
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <button class="admin-mobile-toggle" onclick="toggleAdminSidebar()" title="فتح القائمة">☰</button>
+                <div class="page-heading">
+                    <h1 id="tabHeading">نظرة عامة والتحليلات الحية</h1>
+                    <p id="tabSubHeading">مؤشرات الأداء، التدفق المالي الخليجي والدولي، وحركة الطلبيات</p>
+                </div>
             </div>
 
             <div class="top-actions">

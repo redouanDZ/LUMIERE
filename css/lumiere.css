@@ -1362,12 +1362,22 @@ body {
     }
 }
 
+/* QuickView Responsive Grid */
+.qv-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 30px;
+    align-items: start;
+}
+
 @media (max-width: 768px) {
     body {
-        padding-bottom: 68px; /* space for mobile bottom bar */
+        padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
     }
     .mobile-bottom-nav {
         display: flex;
+        height: calc(64px + env(safe-area-inset-bottom, 0px));
+        padding-bottom: env(safe-area-inset-bottom, 0px);
     }
     .top-actions, .header-controls #currencySelector {
         font-size: 0.75rem;
@@ -1406,6 +1416,13 @@ body {
     .modal-box {
         padding: 22px;
         width: 95%;
+    }
+    .qv-grid {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+    .quickview-modal {
+        padding: 24px 18px;
     }
 }
 

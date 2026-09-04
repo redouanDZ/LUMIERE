@@ -2,6 +2,15 @@ let cachedData = null;
 let revenueChart = null;
 let countryChart = null;
 
+// Mobile Sidebar Handler
+function toggleAdminSidebar() {
+    const sidebar = document.querySelector('.admin-sidebar');
+    const overlay = document.getElementById('adminSidebarOverlay');
+    if (sidebar) sidebar.classList.toggle('active');
+    if (overlay) overlay.classList.toggle('active');
+}
+window.toggleAdminSidebar = toggleAdminSidebar;
+
 // Tab Switching
 function switchTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -25,6 +34,12 @@ function switchTab(tabId) {
     if (titles[tabId]) {
         document.getElementById('tabHeading').textContent = titles[tabId].h;
         document.getElementById('tabSubHeading').textContent = titles[tabId].sub;
+    }
+
+    // Auto-close sidebar on mobile and tablet after selecting a tab
+    if (window.innerWidth <= 992) {
+        document.querySelector('.admin-sidebar')?.classList.remove('active');
+        document.getElementById('adminSidebarOverlay')?.classList.remove('active');
     }
 }
 
