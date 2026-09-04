@@ -170,7 +170,7 @@ module.exports = {
                 INSERT INTO customers (name, email, password_hash, phone, country, city, address, reward_points)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `, ['سارة العتيبي', 'sarah@example.com', hash, '+966501234567', 'Saudi Arabia', 'Riyadh', 'حي العليا، شارع التحلية', 150]);
-            console.log('  ✓ Seeded demo customer: sarah@example.com / lumiere2026!');
+            console.log('  ✓ Seeded demo customer profile');
         }
     }
 };
