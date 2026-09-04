@@ -36,6 +36,8 @@
 html {
     scroll-behavior: smooth;
     font-size: 16px;
+    overflow-x: hidden;
+    max-width: 100%;
 }
 
 body {
@@ -44,6 +46,8 @@ body {
     color: var(--text-primary);
     line-height: 1.6;
     overflow-x: hidden;
+    max-width: 100%;
+    position: relative;
     -webkit-font-smoothing: antialiased;
 }
 
@@ -865,20 +869,30 @@ body {
 .cart-drawer {
     position: fixed;
     top: 0;
-    inset-inline-end: -440px;
-    width: 420px;
-    max-width: 92vw;
+    bottom: 0;
+    width: 400px;
+    max-width: 90vw;
     height: 100vh;
     background: #FFFFFF;
     z-index: 2001;
-    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 0 35px rgba(0, 0, 0, 0.2);
     display: flex;
     flex-direction: column;
-    transition: inset-inline-end 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.35s;
+    visibility: hidden;
+    right: 0;
+    transform: translateX(100%);
+}
+
+[dir="rtl"] .cart-drawer {
+    right: auto;
+    left: 0;
+    transform: translateX(-100%);
 }
 
 .cart-drawer.active {
-    inset-inline-end: 0;
+    transform: translateX(0) !important;
+    visibility: visible;
 }
 
 .drawer-header {
@@ -1267,18 +1281,28 @@ body {
     position: fixed;
     top: 0;
     bottom: 0;
-    inset-inline-start: -320px;
-    width: 300px;
+    width: 290px;
+    max-width: 82vw;
     background: #FAF7F2;
     z-index: 2001;
-    padding: 28px 24px;
+    padding: 24px 20px;
     box-shadow: 0 0 35px rgba(0,0,0,0.3);
-    transition: inset-inline-start 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     overflow-y: auto;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.35s;
+    visibility: hidden;
+    left: 0;
+    transform: translateX(-100%);
+}
+
+[dir="rtl"] .mobile-drawer {
+    left: auto;
+    right: 0;
+    transform: translateX(100%);
 }
 
 .mobile-drawer.active {
-    inset-inline-start: 0;
+    transform: translateX(0) !important;
+    visibility: visible;
 }
 
 .mobile-bottom-nav {
@@ -1374,36 +1398,59 @@ body {
     body {
         padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
     }
+    .header-container {
+        padding: 10px 14px;
+        gap: 8px;
+    }
+    .logo-text {
+        font-size: 1.4rem;
+        letter-spacing: 2px;
+    }
+    .logo-sub {
+        font-size: 0.52rem;
+        letter-spacing: 1.5px;
+    }
+    #customerAuthBtn {
+        display: none !important; /* accessible via mobile bottom nav and drawer */
+    }
+    .header-controls {
+        gap: 6px;
+    }
+    .select-pill {
+        padding: 4px 8px;
+        font-size: 0.72rem;
+    }
+    .cart-btn {
+        width: 36px;
+        height: 36px;
+        padding: 6px;
+    }
     .mobile-bottom-nav {
         display: flex;
         height: calc(64px + env(safe-area-inset-bottom, 0px));
         padding-bottom: env(safe-area-inset-bottom, 0px);
     }
-    .top-actions, .header-controls #currencySelector {
-        font-size: 0.75rem;
-        padding: 4px 8px;
-    }
     .hero-title {
-        font-size: 2.3rem;
+        font-size: 2.2rem;
     }
     .section-title {
-        font-size: 2rem;
+        font-size: 1.85rem;
     }
     .products-grid {
         grid-template-columns: 1fr 1fr;
-        gap: 14px;
+        gap: 12px;
     }
     .product-card {
-        padding: 12px;
+        padding: 10px;
     }
     .product-image-wrap {
-        height: 170px;
+        height: 160px;
     }
     .product-title {
-        font-size: 0.95rem;
+        font-size: 0.9rem;
     }
     .product-price {
-        font-size: 1rem;
+        font-size: 0.95rem;
     }
     .clinical-stats-grid {
         grid-template-columns: 1fr;
@@ -1426,17 +1473,34 @@ body {
     }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 440px) {
+    .header-container {
+        padding: 8px 10px;
+    }
+    .logo-text {
+        font-size: 1.25rem;
+        letter-spacing: 1.5px;
+    }
+    .logo-sub {
+        display: none;
+    }
+    #currencySelector {
+        max-width: 82px;
+        font-size: 0.68rem;
+        padding: 3px 4px;
+    }
+    #langSelector {
+        max-width: 68px;
+        font-size: 0.68rem;
+        padding: 3px 4px;
+    }
     .products-grid {
         grid-template-columns: 1fr;
     }
     .product-image-wrap {
-        height: 240px;
+        height: 230px;
     }
     .ritual-grid {
         grid-template-columns: 1fr;
-    }
-    #customerAuthBtn span:last-child {
-        display: none; /* Icon only on extra small phones */
     }
 }
