@@ -6,7 +6,7 @@ module.exports = {
         const adminEmail = (process.env.ADMIN_EMAIL || 'admin@lumiere-botanics.com').trim().toLowerCase();
         const adminPassword = process.env.ADMIN_PASSWORD;
 
-        const existing = await query('SELECT * FROM users WHERE role = ?', ['admin']);
+        const existing = await query('SELECT * FROM users WHERE email = ?', [adminEmail]);
         if (existing.length === 0) {
             const initialPass = adminPassword || 'Admin_ChangeMe_2026!';
             const hashed = await bcrypt.hash(initialPass, 12);
