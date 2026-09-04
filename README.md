@@ -43,27 +43,44 @@ cd LUMIERE
 npm install
 ```
 
-### 4. Configure Environment & Security Keys
-Copy the example configuration file:
+### 4. Administrator Provisioning & Environment Setup
+
+> 🔒 **SECURITY POLICY:** This repository contains **zero default or hardcoded administrator credentials**. The platform enforces dynamic credential provisioning before initial deployment via either of the following two methods:
+
+#### Method A: Interactive Onboarding Wizard (Recommended)
+Run the automated white-label onboarding script to interactively configure your store branding, currency, and create custom administrator credentials:
 ```bash
-cp .env.example .env
+npm run setup
 ```
+The wizard will:
+1. Prompt interactively for your store name, administrator email, and strong password.
+2. Automatically generate a cryptographically secure 64-character `JWT_SECRET`.
+3. Create your production `.env` file with secure permissions.
 
-Generate a cryptographically secure 64-character hex secret for `JWT_SECRET`:
-```bash
-# Using Node.js:
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+#### Method B: Manual Configuration via `.env`
+Alternatively, you can configure your environment manually:
+1. Copy the example configuration template:
+   ```bash
+   cp .env.example .env
+   ```
+2. Generate a cryptographically secure 64-character hex secret for `JWT_SECRET`:
+   ```bash
+   # Using Node.js:
+   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
-# OR using OpenSSL:
-openssl rand -hex 32
-```
+   # OR using OpenSSL:
+   openssl rand -hex 32
+   ```
+3. Edit `.env` and define your administrator credentials:
+   ```env
+   JWT_SECRET=your_generated_64_character_hex_key
+   ADMIN_EMAIL=admin@yourcompany.com
+   ADMIN_PASSWORD=your_strong_custom_password_min_12_chars
+   ```
 
-Edit `.env` and set:
-1. `JWT_SECRET`: Paste the generated random string.
-2. `ADMIN_EMAIL`: Set your desired administrator email.
-3. `ADMIN_PASSWORD`: Set a strong administrator password (minimum 12 characters).
-
-> ⚠️ **CRITICAL SECURITY NOTE:** Never commit the `.env` file to any Git repository. It is ignored by default in `.gitignore`.
+> ⚠️ **CRITICAL SECURITY NOTE:**
+> - Never commit the `.env` file to version control. It is strictly excluded by `.gitignore`.
+> - The database seeds the administrator account upon the very first server launch (`npm start`). If you change credentials later, update them directly through the Admin Hub or via database migration.
 
 ### 5. Start the Server
 ```bash
@@ -75,7 +92,7 @@ npm start
 - **Admin Operations Hub:** `http://localhost:4000/admin/index.html`
 - **Health Check Endpoint:** `http://localhost:4000/health`
 
-Log in to the Admin Operations Hub using the credentials configured in your `.env` file.
+Log in to the Admin Operations Hub using the administrator credentials created during Step 4 (`npm run setup` or configured in your `.env` file).
 
 ---
 
