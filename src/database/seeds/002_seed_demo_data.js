@@ -160,5 +160,17 @@ module.exports = {
             }
             console.log('  ✓ Seeded 6 flagship demo products into catalog');
         }
+
+        // Demo Customer
+        const custCount = await query('SELECT COUNT(*) as count FROM customers WHERE email = ?', ['sarah@example.com']);
+        if (custCount[0].count === 0) {
+            const bcrypt = require('bcryptjs');
+            const hash = await bcrypt.hash('lumiere2026!', 10);
+            await run(`
+                INSERT INTO customers (name, email, password_hash, phone, country, city, address, reward_points)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            `, ['سارة العتيبي', 'sarah@example.com', hash, '+966501234567', 'Saudi Arabia', 'Riyadh', 'حي العليا، شارع التحلية', 150]);
+            console.log('  ✓ Seeded demo customer: sarah@example.com / lumiere2026!');
+        }
     }
 };
