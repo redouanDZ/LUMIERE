@@ -11,7 +11,7 @@ services:
       - "${PORT:-4000}:4000"
     environment:
       - PORT=4000
-      - NODE_ENV=${NODE_ENV:-production}
+      - NODE_ENV=production
       - JWT_SECRET=${JWT_SECRET}
       - ADMIN_EMAIL=${ADMIN_EMAIL}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}

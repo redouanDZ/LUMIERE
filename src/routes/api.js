@@ -87,6 +87,19 @@ router.post('/orders', orderLimiter, validateOrderInput, async (req, res) => {
         const { name, phone, country, city, address, paymentMethod, currency, items } = req.sanitizedOrder;
         const couponCode = sanitizeString(req.body.couponCode || '').toUpperCase();
 
+        let customerId = null;
+        try {
+            const customerToken = req.cookies?.lumiere_customer_token || req.headers['authorization']?.split(' ')[1];
+            if (customerToken) {
+                const decoded = jwt.verify(customerToken, getJwtSecret());
+                if (decoded && decoded.id) {
+                    customerId = decoded.id;
+                }
+            }
+        } catch (e) {
+            // Guest order or invalid token
+        }
+
         let totalUsd = 0;
         const processedItems = [];
 
@@ -94,7 +107,7 @@ router.post('/orders', orderLimiter, validateOrderInput, async (req, res) => {
             const dbProd = await query('SELECT * FROM products WHERE id = ?', [item.id]);
             if (dbProd.length > 0) {
                 const prod = dbProd[0];
-                const qty = Math.max(1, parseInt(item.qty) || 1);
+                const qty = Math.min(20, Math.max(1, parseInt(item.qty) || 1));
                 totalUsd += prod.price_usd * qty;
                 processedItems.push({
                     id: prod.id,
@@ -119,17 +132,32 @@ router.post('/orders', orderLimiter, validateOrderInput, async (req, res) => {
         const rate = rates[currency] || 3.75;
         const totalLocal = Math.round(totalUsd * rate);
 
-        const orderNumber = 'LUM-' + Date.now().toString().slice(-6);
+        let result = null;
+        let orderNumber = '';
+        const maxRetries = 5;
 
-        const result = await run(`
-            INSERT INTO orders (
-                order_number, customer_name, customer_phone, customer_country, customer_city,
-                customer_address, payment_method, currency, total_usd, total_local, items_json
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, [
-            orderNumber, name, phone, country, city, address, paymentMethod, currency,
-            totalUsd.toFixed(2), totalLocal, JSON.stringify(processedItems)
-        ]);
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+                orderNumber = `LUM-${Date.now().toString().slice(-6)}-${randomSuffix}`;
+
+                result = await run(`
+                    INSERT INTO orders (
+                        order_number, customer_id, customer_name, customer_phone, customer_country, customer_city,
+                        customer_address, payment_method, currency, total_usd, total_local, items_json
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `, [
+                    orderNumber, customerId, name, phone, country, city, address, paymentMethod, currency,
+                    totalUsd.toFixed(2), totalLocal, JSON.stringify(processedItems)
+                ]);
+                break;
+            } catch (insertErr) {
+                if (insertErr.message && insertErr.message.includes('UNIQUE') && attempt < maxRetries - 1) {
+                    continue;
+                }
+                throw insertErr;
+            }
+        }
 
         res.status(201).json({
             success: true,
@@ -174,8 +202,7 @@ router.post('/auth/login', authLimiter, async (req, res) => {
 
         res.json({
             success: true,
-            user: { id: user.id, name: user.name, email: user.email, role: user.role },
-            token
+            user: { id: user.id, name: user.name, email: user.email, role: user.role }
         });
     } catch (err) {
         safeError(res, err);
@@ -414,7 +441,6 @@ router.post('/customer/register', authLimiter, async (req, res) => {
         res.status(201).json({
             success: true,
             customer: { id: result.lastID, name, email, phone, country, city, address, reward_points: 100 },
-            token,
             message: 'تم إنشاء الحساب بنجاح وتمت إضافة 100 نقطة ترحيبية 🎁'
         });
     } catch (err) {
@@ -463,8 +489,7 @@ router.post('/customer/login', authLimiter, async (req, res) => {
                 city: cust.city,
                 address: cust.address,
                 reward_points: cust.reward_points
-            },
-            token
+            }
         });
     } catch (err) {
         safeError(res, err);
@@ -489,8 +514,8 @@ router.get('/customer/me', async (req, res) => {
 
         const cust = customers[0];
 
-        // Fetch their orders by phone or customer email match
-        const orders = await query('SELECT * FROM orders WHERE customer_phone = ? OR customer_name = ? ORDER BY id DESC', [cust.phone, cust.name]);
+        // Fetch their orders by customer_id match exclusively
+        const orders = await query('SELECT * FROM orders WHERE customer_id = ? ORDER BY id DESC', [cust.id]);
 
         res.json({
             success: true,

@@ -68,8 +68,8 @@ const validateOrderInput = (req, res, next) => {
         }
         const cleanId = sanitizeString(item.id);
         const qty = parseInt(item.qty, 10);
-        if (isNaN(qty) || qty < 1 || qty > 100) {
-            return res.status(400).json({ success: false, message: 'كمية المنتج غير صالحة' });
+        if (isNaN(qty) || qty < 1 || qty > 20) {
+            return res.status(400).json({ success: false, message: 'كمية المنتج يجب أن تتراوح بين 1 و 20 قطعة' });
         }
         validatedItems.push({ id: cleanId, qty });
     }

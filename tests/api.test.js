@@ -101,6 +101,26 @@ describe('LUMIÈRE Botanics API Test Suite', () => {
             expect(res.statusCode).toBe(400);
             expect(res.body.success).toBe(false);
         });
+
+        it('should reject an order with item quantity exceeding limit of 20', async () => {
+            const excessPayload = {
+                name: 'Sara Ahmed',
+                phone: '+966512345678',
+                country: 'Saudi Arabia',
+                city: 'Riyadh',
+                address: 'Olaya St',
+                items: [
+                    { id: 'serum', qty: 25 }
+                ]
+            };
+
+            const res = await request(app)
+                .post('/api/orders')
+                .send(excessPayload);
+
+            expect(res.statusCode).toBe(400);
+            expect(res.body.success).toBe(false);
+        });
     });
 
     // 4. AUTH LOGIN API

@@ -15,10 +15,31 @@ const PORT = process.env.PORT || 4000;
 
 // Security Middlewares
 app.use(helmet({
-    contentSecurityPolicy: false // Allows luxury external google fonts & assets
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            imgSrc: ["'self'", "data:"],
+            connectSrc: ["'self'"]
+        }
+    }
 }));
+
+// CORS Configuration: Restrict to explicit allowed origins
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
+    : ['http://localhost:4000', 'http://127.0.0.1:4000'];
+
 app.use(cors({
-    origin: true,
+    origin: (origin, callback) => {
+        // Allow requests with no origin (mobile apps, server-to-server, curl) or matched origins
+        if (!origin || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        return callback(new Error('Blocked by CORS policy: Origin not allowed'));
+    },
     credentials: true
 }));
 
