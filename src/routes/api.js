@@ -481,11 +481,11 @@ router.post('/customer/logout', (req, res) => {
 router.get('/customer/me', async (req, res) => {
     try {
         const token = req.cookies?.lumiere_customer_token || req.headers['authorization']?.split(' ')[1];
-        if (!token) return res.status(401).json({ success: false, message: 'غير مسجل الدخول' });
+        if (!token) return res.status(200).json({ success: false, authenticated: false, message: 'غير مسجل الدخول' });
 
         const decoded = jwt.verify(token, getJwtSecret());
         const customers = await query('SELECT id, name, email, phone, country, city, address, reward_points FROM customers WHERE id = ?', [decoded.id]);
-        if (customers.length === 0) return res.status(404).json({ success: false, message: 'العميل غير موجود' });
+        if (customers.length === 0) return res.status(200).json({ success: false, authenticated: false, message: 'العميل غير موجود' });
 
         const cust = customers[0];
 
@@ -494,6 +494,7 @@ router.get('/customer/me', async (req, res) => {
 
         res.json({
             success: true,
+            authenticated: true,
             customer: cust,
             orders: orders.map(o => ({
                 ...o,
@@ -501,7 +502,7 @@ router.get('/customer/me', async (req, res) => {
             }))
         });
     } catch (err) {
-        res.status(401).json({ success: false, message: 'جلسة منتهية الصلاحية' });
+        res.status(200).json({ success: false, authenticated: false, message: 'جلسة منتهية الصلاحية' });
     }
 });
 

@@ -526,6 +526,8 @@ function renderCart() {
 
     const totalCount = cart.reduce((sum, item) => sum + item.qty, 0);
     if (countEl) countEl.textContent = totalCount;
+    const mobileBadge = document.getElementById('mobileCartBadge');
+    if (mobileBadge) mobileBadge.textContent = totalCount;
 
     if (!itemsContainer) return;
 
@@ -951,11 +953,5 @@ function toggleMobileNav() {
     overlay.classList.toggle('active');
 }
 
-// Sync mobile cart badge whenever cart changes
-const originalUpdateCartUI = updateCartUI;
-updateCartUI = function() {
-    originalUpdateCartUI();
-    const count = cart.reduce((sum, item) => sum + item.qty, 0);
-    const mBadge = document.getElementById('mobileCartBadge');
-    if (mBadge) mBadge.textContent = count;
-};
+// Provide updateCartUI alias for backward compatibility
+window.updateCartUI = renderCart;
