@@ -360,7 +360,7 @@
     <div id="productModal" class="modal-overlay">
         <div class="modal-box">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h3 class="section-title">تعديل سعر ومخزون المستحضر</h3>
+                <h3 class="section-title">تعديل سعر ومخزون وصورة المستحضر</h3>
                 <button onclick="closeProductModal()" style="background:none; border:none; color:var(--text-secondary); font-size:1.5rem; cursor:pointer;">✕</button>
             </div>
             <form id="editProductForm">
@@ -376,6 +376,24 @@
                 <div class="form-group">
                     <label>الكمية المتوفرة بالمخزون</label>
                     <input type="number" id="editProductStock" class="form-control" required>
+                </div>
+                <!-- Image upload for existing product -->
+                <div class="form-group">
+                    <label>صورة المستحضر (من كاميرا أو معرض صور الهاتف)</label>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <label for="editImageFile" class="btn-gold" style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; font-size: 0.85rem; border-radius: 8px;">
+                                📸 تغيير الصورة من الهاتف
+                            </label>
+                            <input type="file" id="editImageFile" accept="image/*" style="display: none;">
+                            <span id="editImageStatus" style="font-size: 0.8rem; color: var(--text-secondary);"></span>
+                        </div>
+                        <div id="editImagePreviewBox" style="display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(197,160,89,0.2);">
+                            <img id="editImagePreview" src="" alt="صورة المنتج" style="width: 48px; height: 48px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2);">
+                            <span id="editImageNotice" style="font-size: 0.78rem; color: var(--text-secondary);">الصورة الحالية المعتمدة للمستحضر</span>
+                        </div>
+                    </div>
+                    <input type="hidden" id="editProductImageUrl" value="">
                 </div>
                 <button type="submit" class="btn-gold" style="width: 100%; justify-content: center; padding: 12px;">حفظ التعديلات في قاعدة البيانات 💾</button>
             </form>
@@ -415,6 +433,27 @@
                 <div class="form-group">
                     <label>وصف مختصر بالعربية</label>
                     <input type="text" id="npDescAr" class="form-control" placeholder="تركيبة نقية فرنسية لنضارة فورية" required>
+                </div>
+                <!-- Image upload from phone -->
+                <div class="form-group">
+                    <label>صورة المستحضر (من كاميرا أو معرض صور الهاتف)</label>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                            <label for="npImageFile" class="btn-gold" style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; font-size: 0.88rem; border-radius: 8px;">
+                                📸 التقاط أو اختيار صورة من الهاتف
+                            </label>
+                            <input type="file" id="npImageFile" accept="image/*" style="display: none;">
+                            <span id="npImageStatus" style="font-size: 0.82rem; color: var(--text-secondary);">اختياري (سيتم استخدام صورة افتراضية إن لم يتم الرفع)</span>
+                        </div>
+                        <div id="npImagePreviewBox" style="display: none; align-items: center; gap: 12px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 1px dashed var(--gold-light);">
+                            <img id="npImagePreview" src="" alt="معاينة الصورة" style="width: 55px; height: 55px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2);">
+                            <div>
+                                <span style="font-size: 0.85rem; color: #10B981; font-weight: 700; display: block;">✓ تم رفع ومعالجة الصورة بنجاح</span>
+                                <span style="font-size: 0.75rem; color: var(--text-secondary);">جاهزة للنشر الفوري في المتجر</span>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="npImageUrl" value="">
                 </div>
                 <button type="submit" class="btn-gold" style="width: 100%; justify-content: center; padding: 12px; margin-top: 10px;">إضافة المنتج إلى المتجر 🧴</button>
             </form>

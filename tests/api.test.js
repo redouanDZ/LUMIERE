@@ -1,10 +1,15 @@
 const request = require('supertest');
 const app = require('../server');
-const { initSchema, query } = require('../src/database/db');
+const { initSchema, query, close } = require('../src/database/db');
 
 beforeAll(async () => {
     // Ensure database is initialized before tests
     await initSchema();
+});
+
+afterAll(async () => {
+    // Gracefully close database connection
+    await close();
 });
 
 describe('LUMIÈRE Botanics Comprehensive Test Suite', () => {
@@ -208,6 +213,52 @@ describe('LUMIÈRE Botanics Comprehensive Test Suite', () => {
 
             expect(res.statusCode).toBe(401);
             expect(res.body.success).toBe(false);
+        });
+
+        it('should block mobile image upload without admin credentials', async () => {
+            const res = await request(app)
+                .post('/api/admin/upload-image')
+                .send({
+                    imageBase64: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+                });
+
+            expect(res.statusCode).toBe(401);
+            expect(res.body.success).toBe(false);
+        });
+
+        it('should successfully upload a product image and update product when authenticated as admin', async () => {
+            const adminEmail = process.env.ADMIN_EMAIL || (process.env.NODE_ENV === 'test' ? 'admin@test.local' : 'admin@domain.com');
+            const adminPassword = process.env.ADMIN_PASSWORD || 'Test_Admin_2026!';
+
+            const loginRes = await request(app)
+                .post('/api/auth/login')
+                .send({ email: adminEmail, password: adminPassword });
+
+            const adminCookie = loginRes.headers['set-cookie'];
+
+            const uploadRes = await request(app)
+                .post('/api/admin/upload-image')
+                .set('Cookie', adminCookie)
+                .send({
+                    imageBase64: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+                });
+
+            expect(uploadRes.statusCode).toBe(201);
+            expect(uploadRes.body.success).toBe(true);
+            expect(uploadRes.body.imageUrl).toMatch(/^images\/uploads\/prod_\d+_[a-z0-9]+\.png$/);
+
+            // Verify PATCH product image with the newly uploaded image
+            const patchRes = await request(app)
+                .patch('/api/admin/products/serum')
+                .set('Cookie', adminCookie)
+                .send({
+                    price_usd: 48,
+                    stock: 50,
+                    image: uploadRes.body.imageUrl
+                });
+
+            expect(patchRes.statusCode).toBe(200);
+            expect(patchRes.body.success).toBe(true);
         });
     });
 

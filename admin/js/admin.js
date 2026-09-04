@@ -198,7 +198,7 @@ async function loadProducts() {
                     <td><span class="badge" style="background:rgba(16,185,129,0.15); color:#34D399;">${p.stock} قطعة</span></td>
                     <td>⭐ ${p.rating} (${p.reviews_count})</td>
                     <td style="display:flex; gap:8px;">
-                        <button onclick="handleEditProductClick(this)" data-id="${p.id}" data-title="${encodeURIComponent(p.title_ar)}" data-price="${p.price_usd}" data-stock="${p.stock}" class="btn-outline-gold" style="padding:4px 10px; font-size:0.8rem;">تعديل</button>
+                        <button onclick="handleEditProductClick(this)" data-id="${p.id}" data-title="${encodeURIComponent(p.title_ar)}" data-price="${p.price_usd}" data-stock="${p.stock}" data-image="${encodeURIComponent(p.image || '')}" class="btn-outline-gold" style="padding:4px 10px; font-size:0.8rem;">تعديل</button>
                         <button onclick="deleteProduct('${p.id}')" class="btn-delete" title="حذف المستحضر">🗑️</button>
                     </td>
                 </tr>
@@ -214,7 +214,8 @@ function handleEditProductClick(btn) {
         btn.getAttribute('data-id'),
         decodeURIComponent(btn.getAttribute('data-title')),
         parseFloat(btn.getAttribute('data-price')),
-        parseInt(btn.getAttribute('data-stock'), 10)
+        parseInt(btn.getAttribute('data-stock'), 10),
+        decodeURIComponent(btn.getAttribute('data-image') || '')
     );
 }
 
@@ -232,8 +233,47 @@ async function deleteProduct(productId) {
     }
 }
 
-function openNewProductModal() { document.getElementById('newProductModal').classList.add('active'); }
+function openNewProductModal() {
+    const fileInput = document.getElementById('npImageFile');
+    if (fileInput) fileInput.value = '';
+    const imgUrlInput = document.getElementById('npImageUrl');
+    if (imgUrlInput) imgUrlInput.value = '';
+    const previewBox = document.getElementById('npImagePreviewBox');
+    if (previewBox) previewBox.style.display = 'none';
+    const statusEl = document.getElementById('npImageStatus');
+    if (statusEl) {
+        statusEl.textContent = 'اختياري (سيتم استخدام صورة افتراضية إن لم يتم الرفع)';
+        statusEl.style.color = 'var(--text-secondary)';
+    }
+    document.getElementById('newProductModal').classList.add('active');
+}
 function closeNewProductModal() { document.getElementById('newProductModal').classList.remove('active'); }
+
+// Handle mobile image file selection for new product
+document.getElementById('npImageFile')?.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files[0]) {
+        handleMobileImageUpload(
+            e.target.files[0],
+            document.getElementById('npImageStatus'),
+            document.getElementById('npImagePreview'),
+            document.getElementById('npImagePreviewBox'),
+            document.getElementById('npImageUrl')
+        );
+    }
+});
+
+// Handle mobile image file selection for editing product
+document.getElementById('editImageFile')?.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files[0]) {
+        handleMobileImageUpload(
+            e.target.files[0],
+            document.getElementById('editImageStatus'),
+            document.getElementById('editImagePreview'),
+            document.getElementById('editImagePreviewBox'),
+            document.getElementById('editProductImageUrl')
+        );
+    }
+});
 
 document.getElementById('newProductForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -242,6 +282,7 @@ document.getElementById('newProductForm').addEventListener('submit', async (e) =
     const price_usd = document.getElementById('npPriceUsd').value;
     const stock = document.getElementById('npStock').value;
     const desc_ar = document.getElementById('npDescAr').value;
+    const image = document.getElementById('npImageUrl').value || 'images/serum.jpg';
 
     const res = await fetch('/api/admin/products', {
         method: 'POST',
@@ -253,6 +294,7 @@ document.getElementById('newProductForm').addEventListener('submit', async (e) =
             price_usd,
             stock,
             desc_ar,
+            image,
             category_ar: categoryKey === 'serums' ? 'سيرومات' : categoryKey === 'creams' ? 'كريمات' : 'تنظيف وأقنعة'
         })
     });
@@ -359,12 +401,102 @@ document.getElementById('newCouponForm').addEventListener('submit', async (e) =>
     }
 });
 
+// Image Compression and Upload Utility (Supports Mobile Camera & Gallery)
+function compressImage(file, maxDimension = 1200, quality = 0.85) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                let { width, height } = img;
+                if (width > maxDimension || height > maxDimension) {
+                    if (width > height) {
+                        height = Math.round((height * maxDimension) / width);
+                        width = maxDimension;
+                    } else {
+                        width = Math.round((width * maxDimension) / height);
+                        height = maxDimension;
+                    }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                const base64 = canvas.toDataURL('image/jpeg', quality);
+                resolve(base64);
+            };
+            img.onerror = () => reject(new Error('فشل قراءة ملف الصورة'));
+            img.src = e.target.result;
+        };
+        reader.onerror = () => reject(new Error('فشل تحميل الصورة من الجهاز'));
+        reader.readAsDataURL(file);
+    });
+}
+
+async function handleMobileImageUpload(file, statusEl, previewImg, previewBox, hiddenUrlInput) {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+        alert('يرجى اختيار ملف صورة صالح (JPG, PNG, WebP)');
+        return;
+    }
+
+    if (statusEl) {
+        statusEl.style.color = 'var(--gold-light)';
+        statusEl.textContent = 'جاري ضغط ورفع الصورة من الهاتف... ⏳';
+    }
+
+    try {
+        const imageBase64 = await compressImage(file);
+
+        // Upload to server
+        const res = await fetch('/api/admin/upload-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageBase64 })
+        });
+        const data = await res.json();
+
+        if (data.success && data.imageUrl) {
+            if (hiddenUrlInput) hiddenUrlInput.value = data.imageUrl;
+            if (previewImg) previewImg.src = '../' + data.imageUrl;
+            if (previewBox) previewBox.style.display = 'flex';
+            if (statusEl) {
+                statusEl.style.color = '#10B981';
+                statusEl.textContent = '✓ تم رفع الصورة بنجاح';
+            }
+        } else {
+            throw new Error(data.message || 'فشل رفع الصورة');
+        }
+    } catch (err) {
+        console.error(err);
+        if (statusEl) {
+            statusEl.style.color = '#EF4444';
+            statusEl.textContent = '✕ ' + (err.message || 'فشل رفع الصورة');
+        }
+        alert(err.message || 'حدث خطأ أثناء رفع الصورة');
+    }
+}
+
 // Edit Product Modal
-function openProductModal(id, title, price, stock) {
+function openProductModal(id, title, price, stock, image) {
     document.getElementById('editProductId').value = id;
     document.getElementById('editProductTitle').value = title;
     document.getElementById('editProductPrice').value = price;
     document.getElementById('editProductStock').value = stock;
+    document.getElementById('editProductImageUrl').value = image || '';
+
+    const previewImg = document.getElementById('editImagePreview');
+    if (previewImg) {
+        previewImg.src = image ? (image.startsWith('http') ? image : '../' + image) : '../images/serum.jpg';
+    }
+    const editNotice = document.getElementById('editImageNotice');
+    if (editNotice) editNotice.textContent = 'الصورة الحالية المعتمدة للمستحضر';
+    const statusEl = document.getElementById('editImageStatus');
+    if (statusEl) statusEl.textContent = '';
+    const fileInput = document.getElementById('editImageFile');
+    if (fileInput) fileInput.value = '';
+
     document.getElementById('productModal').classList.add('active');
 }
 function closeProductModal() { document.getElementById('productModal').classList.remove('active'); }
@@ -374,16 +506,20 @@ document.getElementById('editProductForm').addEventListener('submit', async (e) 
     const id = document.getElementById('editProductId').value;
     const price_usd = document.getElementById('editProductPrice').value;
     const stock = document.getElementById('editProductStock').value;
+    const image = document.getElementById('editProductImageUrl').value;
 
     const res = await fetch(`/api/admin/products/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ price_usd, stock })
+        body: JSON.stringify({ price_usd, stock, image })
     });
     const data = await res.json();
     if (data.success) {
         closeProductModal();
         loadProducts();
+        loadAllData();
+    } else {
+        alert(data.message || 'فشل تعديل المستحضر');
     }
 });
 

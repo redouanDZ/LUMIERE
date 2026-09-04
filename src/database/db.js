@@ -64,10 +64,20 @@ const initSchema = async () => {
     await runSeeds();
 };
 
+const close = () => {
+    return new Promise((resolve, reject) => {
+        db.close((err) => {
+            if (err) reject(err);
+            else resolve();
+        });
+    });
+};
+
 module.exports = {
     db,
     dbPath,
     query,
     run,
-    initSchema
+    initSchema,
+    close
 };

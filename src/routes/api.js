@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const fs = require('fs');
+const path = require('path');
 const { query, run } = require('../database/db');
 const { validateOrderInput, sanitizeString } = require('../middleware/validator');
 const { requireAdmin, getJwtSecret } = require('../middleware/auth');
@@ -431,15 +433,76 @@ router.post('/admin/products', requireAdmin, async (req, res) => {
     }
 });
 
-// UPDATE: Update Product (Price & Stock)
+// UPLOAD: Upload product image from mobile or desktop (Admin only)
+router.post('/admin/upload-image', requireAdmin, async (req, res) => {
+    try {
+        const { imageBase64 } = req.body;
+        if (!imageBase64 || typeof imageBase64 !== 'string') {
+            return res.status(400).json({ success: false, message: 'بيانات الصورة مطلوبة' });
+        }
+
+        // Validate base64 data URI format (png, jpeg, jpg, webp) using safe header slicing
+        const commaIdx = imageBase64.indexOf(',');
+        if (commaIdx === -1) {
+            return res.status(400).json({ success: false, message: 'صيغة بيانات الصورة غير صالحة' });
+        }
+
+        const header = imageBase64.slice(0, commaIdx);
+        const base64Data = imageBase64.slice(commaIdx + 1);
+
+        const mimeMatch = header.match(/^data:image\/(png|jpeg|jpg|webp);base64$/i);
+        if (!mimeMatch) {
+            return res.status(400).json({ success: false, message: 'صيغة الصورة غير مدعومة. يرجى اختيار صورة بصيغة JPG أو PNG أو WebP' });
+        }
+
+        const rawExt = mimeMatch[1].toLowerCase();
+        const ext = rawExt === 'jpeg' ? 'jpg' : rawExt;
+        const buffer = Buffer.from(base64Data, 'base64');
+
+        // Enforce max 6MB binary size limit
+        if (buffer.length > 6 * 1024 * 1024) {
+            return res.status(400).json({ success: false, message: 'حجم الصورة يتجاوز الحد المسموح (6 ميغابايت)' });
+        }
+
+        const uploadsDir = path.join(__dirname, '../../images/uploads');
+        if (!fs.existsSync(uploadsDir)) {
+            fs.mkdirSync(uploadsDir, { recursive: true });
+        }
+
+        const safeFilename = `prod_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const filePath = path.join(uploadsDir, safeFilename);
+
+        fs.writeFileSync(filePath, buffer);
+
+        const relativeUrl = `images/uploads/${safeFilename}`;
+        res.status(201).json({
+            success: true,
+            imageUrl: relativeUrl,
+            message: 'تم رفع صورة المنتج بنجاح'
+        });
+    } catch (err) {
+        safeError(res, err, 'فشل حفظ الصورة على الخادم');
+    }
+});
+
+// UPDATE: Update Product (Price, Stock & optionally Image)
 router.patch('/admin/products/:id', requireAdmin, async (req, res) => {
     try {
-        const { price_usd, stock } = req.body;
-        await run('UPDATE products SET price_usd = ?, stock = ? WHERE id = ?', [
-            parseFloat(price_usd),
-            parseInt(stock),
-            req.params.id
-        ]);
+        const { price_usd, stock, image } = req.body;
+        if (image && typeof image === 'string' && image.trim().length > 0) {
+            await run('UPDATE products SET price_usd = ?, stock = ?, image = ? WHERE id = ?', [
+                parseFloat(price_usd),
+                parseInt(stock),
+                image.trim(),
+                req.params.id
+            ]);
+        } else {
+            await run('UPDATE products SET price_usd = ?, stock = ? WHERE id = ?', [
+                parseFloat(price_usd),
+                parseInt(stock),
+                req.params.id
+            ]);
+        }
         res.json({ success: true, message: 'Product updated successfully' });
     } catch (err) {
         safeError(res, err);
