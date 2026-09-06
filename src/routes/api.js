@@ -323,10 +323,14 @@ router.get('/admin/stats', requireAdmin, async (req, res) => {
         `);
 
         const customersList = await query(`
-            SELECT customer_name as name, customer_phone as phone, customer_city as city,
-                   customer_country as country, COUNT(*) as total_orders, SUM(total_usd) as total_spent,
-                   MAX(created_at) as last_order_date
-            FROM orders GROUP BY customer_phone ORDER BY total_spent DESC LIMIT 20
+            SELECT c.id, c.name, c.phone, c.city, c.country, 
+                   COUNT(o.id) as total_orders, 
+                   COALESCE(SUM(o.total_usd), 0) as total_spent,
+                   MAX(o.created_at) as last_order_date
+            FROM customers c
+            LEFT JOIN orders o ON c.id = o.customer_id
+            GROUP BY c.id
+            ORDER BY c.id DESC LIMIT 50
         `);
 
         res.json({
@@ -536,13 +540,32 @@ router.patch('/admin/orders/:id/status', requireAdmin, async (req, res) => {
     }
 });
 
-// DELETE: Delete order (e.g. test or fake orders)
+// Admin Delete Order
 router.delete('/admin/orders/:id', requireAdmin, async (req, res) => {
     try {
         await run('DELETE FROM orders WHERE id = ?', [req.params.id]);
-        res.json({ success: true, message: 'Order deleted successfully' });
+        res.json({ success: true, message: 'تم حذف الطلب' });
     } catch (err) {
-        safeError(res, err);
+        res.status(500).json({ success: false, message: 'فشل الحذف' });
+    }
+});
+
+// Admin Delete Customer
+router.delete('/admin/customers/:id', requireAdmin, async (req, res) => {
+    try {
+        const customerId = req.params.id;
+        const customers = await query('SELECT id FROM customers WHERE id = ?', [customerId]);
+        if (customers.length === 0) {
+            return res.status(404).json({ success: false, message: 'العميل غير موجود' });
+        }
+        // Nullify customer_id in orders to keep financial records
+        await run('UPDATE orders SET customer_id = NULL WHERE customer_id = ?', [customerId]);
+        // Delete customer
+        await run('DELETE FROM customers WHERE id = ?', [customerId]);
+        res.json({ success: true, message: 'تم حذف حساب العميل بنجاح' });
+    } catch (err) {
+        console.error('Delete customer error:', err);
+        res.status(500).json({ success: false, message: 'فشل الحذف' });
     }
 });
 

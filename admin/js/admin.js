@@ -552,9 +552,27 @@ function renderCustomers(customers) {
             <td>${c.country} - ${c.city}</td>
             <td>${c.total_orders} طلبات</td>
             <td style="font-weight:700; color:var(--gold-light);">${Math.round(c.total_spent * 3.75)} SAR</td>
-            <td style="font-size:0.8rem; color:var(--text-secondary);">${new Date(c.last_order_date).toLocaleDateString('ar-SA')}</td>
+            <td style="font-size:0.8rem; color:var(--text-secondary);">${c.last_order_date ? new Date(c.last_order_date).toLocaleDateString('ar-SA') : 'لا يوجد طلبات'}</td>
+            <td>
+                <button onclick="deleteCustomer(${c.id}, '${c.name.replace(/'/g, "\\'")}')" class="btn-delete" title="حذف حساب العميل">🗑️</button>
+            </td>
         </tr>
     `).join('');
+}
+
+async function deleteCustomer(id, name) {
+    if (!confirm(`هل أنت متأكد من رغبتك في حذف حساب العميل [${name}] نهائياً؟\nهذا الإجراء لا يمكن التراجع عنه.`)) return;
+    try {
+        const res = await fetch(`/api/admin/customers/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+            loadAllData();
+        } else {
+            alert(data.message || 'فشل حذف الحساب');
+        }
+    } catch (err) {
+        alert('حدث خطأ أثناء الاتصال بالخادم');
+    }
 }
 
 function initCharts(data) {
