@@ -96,6 +96,19 @@ Log in to the Admin Operations Hub using the administrator credentials created d
 
 ---
 
+## 🌐 إعداد CORS للنشر (Cross-Origin Resource Sharing)
+
+للسماح للواجهة الأمامية بالاتصال بالواجهة الخلفية من دومين مختلف (مثل استضافة الواجهة على Vercel والخلفية على Render)، يجب ضبط متغير البيئة `ALLOWED_ORIGINS`.
+
+**طريقة الضبط:**
+أضف النطاقات المسموح بها مفصولة بفواصل في ملف `.env` أو في إعدادات البيئة على منصة الاستضافة:
+
+```env
+ALLOWED_ORIGINS=https://my-storefront.vercel.app,https://admin.mystore.com
+```
+
+---
+
 ## 🐳 Running with Docker
 
 ```bash

@@ -1,15 +1,11 @@
 const jwt = require('jsonwebtoken');
 
-const getJwtSecret = () => {
-    const secret = process.env.JWT_SECRET;
-    if (!secret) {
-        if (process.env.NODE_ENV === 'production') {
-            throw new Error('FATAL SECURITY ERROR: JWT_SECRET must be defined in production environment variables.');
-        }
-        return 'dev_fallback_insecure_key_do_not_use_in_prod';
-    }
-    return secret;
-};
+if (!process.env.JWT_SECRET) {
+    console.error('FATAL SECURITY ERROR: JWT_SECRET environment variable is missing. Server cannot start.');
+    process.exit(1);
+}
+
+const getJwtSecret = () => process.env.JWT_SECRET;
 
 const requireAdmin = (req, res, next) => {
     const token = req.cookies?.lumiere_admin_token || req.headers['authorization']?.split(' ')[1];
