@@ -51,9 +51,13 @@ app.set('trust proxy', 1);
 // Apply general API rate limiter
 app.use('/api/', apiLimiter);
 
-// Parsers (support up to 10MB for base64 mobile image uploads)
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Specific parser for base64 mobile image uploads (10MB limit)
+app.use('/api/admin/upload-image', express.json({ limit: '10mb' }));
+app.use('/api/admin/upload-image', express.urlencoded({ extended: true, limit: '10mb' }));
+
+// General Parsers (support up to 500kb for general endpoints)
+app.use(express.json({ limit: '500kb' }));
+app.use(express.urlencoded({ extended: true, limit: '500kb' }));
 app.use(cookieParser());
 
 // Block sensitive paths explicitly to prevent database or source code exposure
