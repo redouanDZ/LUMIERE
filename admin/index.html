@@ -63,6 +63,39 @@
                 </button>
             </form>
             <div id="loginMsg" style="color: var(--danger); font-size: 0.88rem; margin-top: 16px;"></div>
+            <div style="margin-top: 14px;">
+                <a href="#" id="showForgotPasswordLink" style="color: var(--gold); font-size: 0.85rem; text-decoration: underline;">نسيت كلمة المرور؟</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgotPasswordScreen" style="display:none; position: fixed; inset: 0; background: #0C0B0A; z-index: 10000; align-items: center; justify-content: center;">
+        <div style="background: #181614; border: 1px solid var(--gold); border-radius: 20px; padding: 45px; width: 100%; max-width: 440px; box-shadow: 0 25px 60px rgba(0,0,0,0.8); text-align: center;">
+            <h3 style="font-family: 'Cormorant Garamond', serif; font-size: 1.8rem; color: var(--gold-light); margin-bottom: 20px;">استعادة كلمة المرور</h3>
+
+            <!-- Step 1: request reset link -->
+            <form id="forgotPasswordForm" style="text-align: start;">
+                <div class="form-group">
+                    <label>البريد الإلكتروني</label>
+                    <input type="email" id="forgotEmail" class="form-control" placeholder="admin@domain.com" autocomplete="username" required>
+                </div>
+                <button type="submit" class="btn-gold" style="width: 100%; justify-content: center; padding: 14px; margin-top: 10px;">إرسال رابط الاستعادة</button>
+            </form>
+
+            <!-- Step 2: set new password (shown when a resetToken is present in the URL) -->
+            <form id="resetPasswordForm" style="display:none; text-align: start;">
+                <div class="form-group">
+                    <label>كلمة المرور الجديدة</label>
+                    <input type="password" id="newPasswordInput" class="form-control" placeholder="••••••••••••" autocomplete="new-password" minlength="8" required>
+                </div>
+                <button type="submit" class="btn-gold" style="width: 100%; justify-content: center; padding: 14px; margin-top: 10px;">تحديث كلمة المرور</button>
+            </form>
+
+            <div id="forgotPasswordMsg" style="font-size: 0.88rem; margin-top: 16px;"></div>
+            <div style="margin-top: 14px;">
+                <a href="#" id="backToLoginLink" style="color: var(--gold); font-size: 0.85rem; text-decoration: underline;">العودة لتسجيل الدخول</a>
+            </div>
         </div>
     </div>
 

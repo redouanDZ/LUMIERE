@@ -8,6 +8,52 @@ const { requireAdmin, getJwtSecret } = require('../middleware/auth');
 const { authLimiter, orderLimiter } = require('../middleware/rateLimiter');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const { OAuth2Client } = require('google-auth-library');
+
+const googleClient = process.env.GOOGLE_CLIENT_ID
+    ? new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
+    : null;
+
+// --- Password reset helpers ---
+// We never store the raw reset token anywhere — only its SHA-256 hash.
+// The raw token exists solely inside the emailed/returned link, so a
+// database read alone (e.g. via SQL injection elsewhere) cannot be used
+// to forge a valid reset.
+const RESET_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const hashResetToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
+
+const sendResetEmail = async (toEmail, resetUrl) => {
+    // No SMTP is configured for this project by default. In that case we
+    // log the reset link server-side so the store owner can still test the
+    // flow locally / during setup. Wire up a real transactional email
+    // provider (SMTP env vars + nodemailer, SendGrid, etc.) before selling
+    // this to a customer who needs real end-user emails delivered.
+    if (!process.env.SMTP_HOST) {
+        console.log(`[password-reset] No SMTP configured. Reset link for ${toEmail}: ${resetUrl}`);
+        return { delivered: false };
+    }
+    try {
+        const nodemailer = require('nodemailer');
+        const transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST,
+            port: parseInt(process.env.SMTP_PORT) || 587,
+            secure: process.env.SMTP_SECURE === 'true',
+            auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+        });
+        await transporter.sendMail({
+            from: process.env.SMTP_FROM || process.env.SMTP_USER,
+            to: toEmail,
+            subject: 'إعادة تعيين كلمة المرور — LUMIÈRE Botanics',
+            html: `<p>لإعادة تعيين كلمة المرور، افتح الرابط التالي (صالح لمدة 30 دقيقة):</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>إن لم تطلب هذا، تجاهل هذه الرسالة.</p>`
+        });
+        return { delivered: true };
+    } catch (e) {
+        console.error('[password-reset] Failed to send email:', e.message);
+        console.log(`[password-reset] Reset link for ${toEmail}: ${resetUrl}`);
+        return { delivered: false };
+    }
+};
 
 // Helper for safe error response
 const safeError = (res, err, defaultMsg) => {
@@ -305,6 +351,63 @@ router.post('/auth/logout', (req, res) => {
     res.json({ success: true, message: 'Logged out' });
 });
 
+// Admin: Request Password Reset
+router.post('/auth/forgot-password', authLimiter, async (req, res) => {
+    try {
+        const email = sanitizeString(req.body.email || '').toLowerCase();
+        // Always respond with the same generic message whether or not the
+        // email exists — prevents leaking which admin emails are registered.
+        const generic = { success: true, message: 'إذا كان البريد مسجلاً، ستصلك رسالة تحتوي رابط إعادة التعيين.' };
+
+        const users = await query('SELECT id, email FROM users WHERE email = ?', [email]);
+        if (users.length === 0) {
+            return res.json(generic);
+        }
+
+        const rawToken = crypto.randomBytes(32).toString('hex');
+        const tokenHash = hashResetToken(rawToken);
+        const expires = new Date(Date.now() + RESET_TOKEN_TTL_MS).toISOString();
+
+        await run('UPDATE users SET reset_token_hash = ?, reset_token_expires = ? WHERE id = ?',
+            [tokenHash, expires, users[0].id]);
+
+        const baseUrl = process.env.PUBLIC_URL || `${req.protocol}://${req.get('host')}`;
+        const resetUrl = `${baseUrl}/admin/index.html?resetToken=${rawToken}&type=admin`;
+        await sendResetEmail(users[0].email, resetUrl);
+
+        res.json(generic);
+    } catch (err) {
+        safeError(res, err);
+    }
+});
+
+// Admin: Complete Password Reset
+router.post('/auth/reset-password', authLimiter, async (req, res) => {
+    try {
+        const { token, newPassword } = req.body;
+        if (!token || !newPassword || newPassword.length < 8) {
+            return res.status(400).json({ success: false, message: 'رمز غير صالح أو كلمة مرور قصيرة جداً (8 أحرف على الأقل)' });
+        }
+
+        const tokenHash = hashResetToken(token);
+        const users = await query(
+            'SELECT id FROM users WHERE reset_token_hash = ? AND reset_token_expires > datetime("now")',
+            [tokenHash]
+        );
+        if (users.length === 0) {
+            return res.status(400).json({ success: false, message: 'رابط إعادة التعيين غير صالح أو منتهي الصلاحية' });
+        }
+
+        const newHash = await bcrypt.hash(newPassword, 12);
+        await run('UPDATE users SET password_hash = ?, reset_token_hash = NULL, reset_token_expires = NULL WHERE id = ?',
+            [newHash, users[0].id]);
+
+        res.json({ success: true, message: 'تم تحديث كلمة المرور بنجاح، يمكنك الآن تسجيل الدخول' });
+    } catch (err) {
+        safeError(res, err);
+    }
+});
+
 // ==========================================
 // ADMIN FULL CRUD OPERATIONS
 // ==========================================
@@ -416,6 +519,31 @@ router.post('/admin/products', requireAdmin, async (req, res) => {
         const pUsd = parseFloat(price_usd) || 45;
         const pStock = parseInt(stock) || 50;
 
+        if (!title_ar || typeof title_ar !== 'string' || !title_ar.trim()) {
+            return res.status(400).json({ success: false, message: 'عنوان المنتج (عربي) مطلوب' });
+        }
+
+        // Sanitize ALL user-supplied text fields before persisting — these are
+        // rendered later via innerHTML on the public storefront (js/lumiere.js),
+        // so unsanitized input here becomes stored XSS for every visitor.
+        const cleanTitleAr = sanitizeString(title_ar);
+        const cleanTitleEn = sanitizeString(title_en) || cleanTitleAr;
+        const cleanCategoryAr = sanitizeString(category_ar) || 'عناية فاخرة';
+        const cleanCategoryEn = sanitizeString(category_en) || 'Luxury Care';
+        const cleanDescAr = sanitizeString(desc_ar);
+        const cleanDescEn = sanitizeString(desc_en);
+        const cleanBenefitsAr = sanitizeString(benefits_ar);
+        const cleanBenefitsEn = sanitizeString(benefits_en);
+        const cleanUsageAr = sanitizeString(usage_ar);
+        const cleanUsageEn = sanitizeString(usage_en);
+        const cleanIngredients = sanitizeString(ingredients);
+        const cleanBadgeAr = sanitizeString(badge_ar) || 'جديد';
+        const cleanBadgeEn = sanitizeString(badge_en) || 'New';
+        // image is a path/filename, not free text — restrict to safe path characters
+        const cleanImage = (typeof image === 'string' && /^[a-zA-Z0-9/_.-]+$/.test(image))
+            ? image
+            : 'images/serum.jpg';
+
         await run(`
             INSERT INTO products (
                 id, category_key, title_ar, title_en, category_ar, category_en,
@@ -423,12 +551,12 @@ router.post('/admin/products', requireAdmin, async (req, res) => {
                 ingredients, price_usd, original_price_usd, stock, image, badge_ar, badge_en
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `, [
-            cleanId, categoryKey || 'serums', title_ar, title_en || title_ar,
-            category_ar || 'عناية فاخرة', category_en || 'Luxury Care',
-            desc_ar || '', desc_en || '', benefits_ar || '', benefits_en || '',
-            usage_ar || '', usage_en || '', ingredients || '',
-            pUsd, (pUsd * 1.3).toFixed(2), pStock, image || 'images/serum.jpg',
-            badge_ar || 'جديد', badge_en || 'New'
+            cleanId, sanitizeString(categoryKey) || 'serums', cleanTitleAr, cleanTitleEn,
+            cleanCategoryAr, cleanCategoryEn,
+            cleanDescAr, cleanDescEn, cleanBenefitsAr, cleanBenefitsEn,
+            cleanUsageAr, cleanUsageEn, cleanIngredients,
+            pUsd, (pUsd * 1.3).toFixed(2), pStock, cleanImage,
+            cleanBadgeAr, cleanBadgeEn
         ]);
 
         res.status(201).json({ success: true, message: 'Product created successfully' });
@@ -698,6 +826,139 @@ router.post('/customer/login', authLimiter, async (req, res) => {
 router.post('/customer/logout', (req, res) => {
     res.clearCookie('lumiere_customer_token');
     res.json({ success: true, message: 'تم تسجيل الخروج بنجاح' });
+});
+
+// Customer: Request Password Reset
+router.post('/customer/forgot-password', authLimiter, async (req, res) => {
+    try {
+        const email = sanitizeString(req.body.email || '').toLowerCase();
+        const generic = { success: true, message: 'إذا كان البريد مسجلاً، ستصلك رسالة تحتوي رابط إعادة التعيين.' };
+
+        const customers = await query('SELECT id, email FROM customers WHERE email = ?', [email]);
+        if (customers.length === 0) {
+            return res.json(generic);
+        }
+
+        const rawToken = crypto.randomBytes(32).toString('hex');
+        const tokenHash = hashResetToken(rawToken);
+        const expires = new Date(Date.now() + RESET_TOKEN_TTL_MS).toISOString();
+
+        await run('UPDATE customers SET reset_token_hash = ?, reset_token_expires = ? WHERE id = ?',
+            [tokenHash, expires, customers[0].id]);
+
+        const baseUrl = process.env.PUBLIC_URL || `${req.protocol}://${req.get('host')}`;
+        const resetUrl = `${baseUrl}/index.html?resetToken=${rawToken}&type=customer`;
+        await sendResetEmail(customers[0].email, resetUrl);
+
+        res.json(generic);
+    } catch (err) {
+        safeError(res, err);
+    }
+});
+
+// Customer: Complete Password Reset
+router.post('/customer/reset-password', authLimiter, async (req, res) => {
+    try {
+        const { token, newPassword } = req.body;
+        if (!token || !newPassword || newPassword.length < 6) {
+            return res.status(400).json({ success: false, message: 'رمز غير صالح أو كلمة مرور قصيرة جداً (6 أحرف على الأقل)' });
+        }
+
+        const tokenHash = hashResetToken(token);
+        const customers = await query(
+            'SELECT id FROM customers WHERE reset_token_hash = ? AND reset_token_expires > datetime("now")',
+            [tokenHash]
+        );
+        if (customers.length === 0) {
+            return res.status(400).json({ success: false, message: 'رابط إعادة التعيين غير صالح أو منتهي الصلاحية' });
+        }
+
+        const newHash = await bcrypt.hash(newPassword, 10);
+        await run('UPDATE customers SET password_hash = ?, reset_token_hash = NULL, reset_token_expires = NULL WHERE id = ?',
+            [newHash, customers[0].id]);
+
+        res.json({ success: true, message: 'تم تحديث كلمة المرور بنجاح، يمكنك الآن تسجيل الدخول' });
+    } catch (err) {
+        safeError(res, err);
+    }
+});
+
+// Customer: Google Sign-In
+// SECURITY: unlike an earlier abandoned attempt at this feature, the ID
+// token's cryptographic signature IS verified here against Google's public
+// keys via google-auth-library — we never trust a client-decoded payload.
+router.post('/customer/google-login', authLimiter, async (req, res) => {
+    try {
+        if (!googleClient) {
+            return res.status(503).json({ success: false, message: 'تسجيل الدخول عبر Google غير مُفعّل على هذا الخادم (GOOGLE_CLIENT_ID غير مضبوط)' });
+        }
+        const { credential } = req.body;
+        if (!credential || typeof credential !== 'string') {
+            return res.status(400).json({ success: false, message: 'رمز Google مفقود' });
+        }
+
+        let payload;
+        try {
+            const ticket = await googleClient.verifyIdToken({
+                idToken: credential,
+                audience: process.env.GOOGLE_CLIENT_ID
+            });
+            payload = ticket.getPayload();
+        } catch (verifyErr) {
+            return res.status(401).json({ success: false, message: 'رمز Google غير صالح' });
+        }
+
+        if (!payload || !payload.email || !payload.email_verified) {
+            return res.status(401).json({ success: false, message: 'يجب أن يكون بريد Google موثقاً' });
+        }
+
+        const email = sanitizeString(payload.email).toLowerCase();
+        const name = sanitizeString(payload.name || payload.given_name || 'عميلة Google');
+        const googleSub = payload.sub;
+
+        let customer;
+        const existing = await query('SELECT * FROM customers WHERE email = ? OR google_sub = ?', [email, googleSub]);
+
+        if (existing.length > 0) {
+            customer = existing[0];
+            if (!customer.google_sub) {
+                await run('UPDATE customers SET google_sub = ? WHERE id = ?', [googleSub, customer.id]);
+            }
+        } else {
+            // New account: password login is disabled by storing a random,
+            // unusable bcrypt hash (satisfies the NOT NULL constraint only).
+            const unusableHash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 10);
+            const result = await run(`
+                INSERT INTO customers (name, email, password_hash, phone, country, city, address, reward_points, google_sub)
+                VALUES (?, ?, ?, '', 'Saudi Arabia', 'Riyadh', '', 100, ?)
+            `, [name, email, unusableHash, googleSub]);
+            customer = { id: result.lastID, name, email, phone: '', country: 'Saudi Arabia', city: 'Riyadh', address: '', reward_points: 100 };
+        }
+
+        const token = jwt.sign(
+            { id: customer.id, name: customer.name, email: customer.email, role: 'customer' },
+            getJwtSecret(),
+            { expiresIn: '30d' }
+        );
+
+        res.cookie('lumiere_customer_token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 30 * 24 * 60 * 60 * 1000
+        });
+
+        res.json({
+            success: true,
+            customer: {
+                id: customer.id, name: customer.name, email: customer.email,
+                phone: customer.phone, country: customer.country, city: customer.city,
+                address: customer.address, reward_points: customer.reward_points
+            }
+        });
+    } catch (err) {
+        safeError(res, err);
+    }
 });
 
 // Customer Profile & Order History

@@ -27,6 +27,11 @@ const getDefaultConfig = () => ({
     shipping: {
         freeShippingThresholdSar: parseInt(process.env.FREE_SHIPPING_THRESHOLD_SAR, 10) || 200,
         estimatedDeliveryGulfDays: process.env.ESTIMATED_DELIVERY_DAYS || '2-4'
+    },
+    auth: {
+        // Public client ID only — safe to expose to the browser. The secret
+        // verification always happens server-side via google-auth-library.
+        googleClientId: process.env.GOOGLE_CLIENT_ID || null
     }
 });
 

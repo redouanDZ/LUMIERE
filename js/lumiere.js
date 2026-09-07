@@ -386,6 +386,16 @@ document.addEventListener('DOMContentLoaded', () => {
     initSocialProof();
     loadStoreConfig();
     loadDynamicProducts();
+    checkForCustomerResetLink();
+
+    document.getElementById('showForgotPasswordLink')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        showCustomerForgotForm();
+    });
+    document.getElementById('backToCustomerLoginLink')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        showCustomerLoginForm();
+    });
 });
 
 async function loadStoreConfig() {
@@ -395,6 +405,7 @@ async function loadStoreConfig() {
         if (data.success && data.data) {
             storeConfig = data.data;
             updateFooterWhatsapp();
+            initGoogleSignIn();
         }
     } catch (e) {
         console.warn('Config load fallback');
@@ -983,6 +994,121 @@ function closeCustomerModal() {
     if (modal) modal.classList.remove('active');
 }
 
+// --- Forgot / Reset Password (customer) ---
+function showCustomerForgotForm() {
+    document.getElementById('customerLoginForm').style.display = 'none';
+    document.getElementById('customerRegisterForm').style.display = 'none';
+    document.getElementById('customerForgotForm').style.display = 'block';
+    const msg = document.getElementById('customerAuthFormMsg');
+    if (msg) msg.textContent = '';
+}
+
+function showCustomerLoginForm() {
+    document.getElementById('customerForgotForm').style.display = 'none';
+    document.getElementById('customerResetForm').style.display = 'none';
+    document.getElementById('customerLoginForm').style.display = 'block';
+    const msg = document.getElementById('customerAuthFormMsg');
+    if (msg) msg.textContent = '';
+}
+
+async function handleCustomerForgotPassword(e) {
+    if (e) e.preventDefault();
+    const email = document.getElementById('custForgotEmail').value.trim();
+    const msg = document.getElementById('customerAuthFormMsg');
+    if (msg) { msg.style.color = '#78716C'; msg.textContent = 'جاري الإرسال...'; }
+    try {
+        const res = await fetch('/api/customer/forgot-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (msg) { msg.style.color = '#16A34A'; msg.textContent = data.message; }
+    } catch (err) {
+        if (msg) { msg.style.color = '#DC2626'; msg.textContent = 'تعذر الاتصال بالخادم'; }
+    }
+    return false;
+}
+
+async function handleCustomerResetPassword(e) {
+    if (e) e.preventDefault();
+    const newPassword = document.getElementById('custNewPassword').value;
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('resetToken');
+    const msg = document.getElementById('customerAuthFormMsg');
+    if (msg) { msg.style.color = '#78716C'; msg.textContent = 'جاري التحديث...'; }
+    try {
+        const res = await fetch('/api/customer/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, newPassword })
+        });
+        const data = await res.json();
+        if (data.success) {
+            if (msg) { msg.style.color = '#16A34A'; msg.textContent = data.message; }
+            setTimeout(() => { window.location.href = window.location.pathname; }, 2000);
+        } else {
+            if (msg) { msg.style.color = '#DC2626'; msg.textContent = data.message; }
+        }
+    } catch (err) {
+        if (msg) { msg.style.color = '#DC2626'; msg.textContent = 'تعذر الاتصال بالخادم'; }
+    }
+    return false;
+}
+
+// If the store page was opened via a password reset link, jump straight to
+// the "set new password" step inside the account modal.
+function checkForCustomerResetLink() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('resetToken') && params.get('type') === 'customer') {
+        openCustomerAuthModal();
+        document.getElementById('customerLoginForm').style.display = 'none';
+        document.getElementById('customerRegisterForm').style.display = 'none';
+        document.getElementById('customerForgotForm').style.display = 'none';
+        document.getElementById('customerResetForm').style.display = 'block';
+    }
+}
+
+// --- Google Sign-In ---
+// The client only ever sends Google's signed ID token to our backend; the
+// backend verifies its cryptographic signature via google-auth-library
+// before trusting anything in it (see /api/customer/google-login).
+function initGoogleSignIn() {
+    const clientId = storeConfig?.auth?.googleClientId;
+    const container = document.getElementById('googleSignInBtn');
+    if (!clientId || !container || typeof google === 'undefined') return;
+
+    google.accounts.id.initialize({
+        client_id: clientId,
+        callback: handleGoogleCredentialResponse
+    });
+    google.accounts.id.renderButton(container, {
+        theme: 'outline', size: 'large', width: 280, text: 'continue_with', locale: 'ar'
+    });
+}
+
+async function handleGoogleCredentialResponse(response) {
+    const msg = document.getElementById('customerAuthFormMsg');
+    if (msg) { msg.style.color = '#78716C'; msg.textContent = 'جاري تسجيل الدخول عبر Google...'; }
+    try {
+        const res = await fetch('/api/customer/google-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ credential: response.credential })
+        });
+        const data = await res.json();
+        if (data.success) {
+            setLoggedInCustomer(data.customer);
+            openCustomerAuthModal();
+        } else if (msg) {
+            msg.style.color = '#DC2626';
+            msg.textContent = data.message || 'تعذر تسجيل الدخول عبر Google';
+        }
+    } catch (err) {
+        if (msg) { msg.style.color = '#DC2626'; msg.textContent = 'تعذر الاتصال بالخادم'; }
+    }
+}
+
 function switchAuthMode(mode) {
     const loginTab = document.getElementById('tabLoginBtn');
     const regTab = document.getElementById('tabRegisterBtn');
@@ -990,6 +1116,10 @@ function switchAuthMode(mode) {
     const regForm = document.getElementById('customerRegisterForm');
     const msg = document.getElementById('custAuthMsg');
     if (msg) msg.textContent = '';
+    document.getElementById('customerForgotForm').style.display = 'none';
+    document.getElementById('customerResetForm').style.display = 'none';
+    const formMsg = document.getElementById('customerAuthFormMsg');
+    if (formMsg) formMsg.textContent = '';
 
     if (mode === 'login') {
         loginTab.style.borderBottom = '2px solid var(--accent-gold)';

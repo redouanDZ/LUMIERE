@@ -2,6 +2,19 @@ let cachedData = null;
 let revenueChart = null;
 let countryChart = null;
 
+// Client-side HTML escaping for any value interpolated into innerHTML.
+// Defense-in-depth: data is already sanitized server-side on write, but this
+// protects the admin UI even if a field somehow arrives unescaped.
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 // Mobile Sidebar Handler
 function toggleAdminSidebar() {
     const sidebar = document.querySelector('.admin-sidebar');
@@ -71,6 +84,85 @@ async function logoutAdmin() {
     await fetch('/api/auth/logout', { method: 'POST' });
     location.reload();
 }
+
+// --- Forgot / Reset Password ---
+(function initForgotPassword() {
+    const loginScreen = document.getElementById('loginScreen');
+    const forgotScreen = document.getElementById('forgotPasswordScreen');
+    const requestForm = document.getElementById('forgotPasswordForm');
+    const resetForm = document.getElementById('resetPasswordForm');
+    const msgEl = document.getElementById('forgotPasswordMsg');
+
+    document.getElementById('showForgotPasswordLink')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        loginScreen.style.display = 'none';
+        forgotScreen.style.display = 'flex';
+    });
+
+    document.getElementById('backToLoginLink')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        forgotScreen.style.display = 'none';
+        loginScreen.style.display = 'flex';
+    });
+
+    // If the page was opened via a reset link (?resetToken=...&type=admin),
+    // show the "set new password" step directly instead of the request form.
+    const params = new URLSearchParams(window.location.search);
+    const resetToken = params.get('resetToken');
+    if (resetToken && params.get('type') === 'admin') {
+        loginScreen.style.display = 'none';
+        forgotScreen.style.display = 'flex';
+        requestForm.style.display = 'none';
+        resetForm.style.display = 'block';
+    }
+
+    requestForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('forgotEmail').value;
+        msgEl.style.color = 'var(--text-secondary)';
+        msgEl.textContent = 'جاري الإرسال...';
+        try {
+            const res = await fetch('/api/auth/forgot-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const data = await res.json();
+            msgEl.style.color = 'var(--gold-light)';
+            msgEl.textContent = data.message;
+        } catch (err) {
+            msgEl.style.color = 'var(--danger)';
+            msgEl.textContent = 'تعذر الاتصال بالخادم';
+        }
+    });
+
+    resetForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newPassword = document.getElementById('newPasswordInput').value;
+        msgEl.style.color = 'var(--text-secondary)';
+        msgEl.textContent = 'جاري التحديث...';
+        try {
+            const res = await fetch('/api/auth/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: resetToken, newPassword })
+            });
+            const data = await res.json();
+            if (data.success) {
+                msgEl.style.color = 'var(--gold-light)';
+                msgEl.textContent = data.message + ' — يمكنك تسجيل الدخول الآن.';
+                resetForm.style.display = 'none';
+                setTimeout(() => { window.location.href = '/admin/index.html'; }, 2000);
+            } else {
+                msgEl.style.color = 'var(--danger)';
+                msgEl.textContent = data.message;
+            }
+        } catch (err) {
+            msgEl.style.color = 'var(--danger)';
+            msgEl.textContent = 'تعذر الاتصال بالخادم';
+        }
+    });
+})();
 
 async function initDashboard() {
     await loadAllData();
@@ -547,17 +639,25 @@ function renderCustomers(customers) {
 
     tbody.innerHTML = customers.map(c => `
         <tr>
-            <td style="font-weight:700;">${c.name}</td>
-            <td style="direction:ltr; text-align:right;">${c.phone}</td>
-            <td>${c.country} - ${c.city}</td>
+            <td style="font-weight:700;">${escapeHtml(c.name)}</td>
+            <td style="direction:ltr; text-align:right;">${escapeHtml(c.phone)}</td>
+            <td>${escapeHtml(c.country)} - ${escapeHtml(c.city)}</td>
             <td>${c.total_orders} طلبات</td>
             <td style="font-weight:700; color:var(--gold-light);">${Math.round(c.total_spent * 3.75)} SAR</td>
             <td style="font-size:0.8rem; color:var(--text-secondary);">${c.last_order_date ? new Date(c.last_order_date).toLocaleDateString('ar-SA') : 'لا يوجد طلبات'}</td>
             <td>
-                <button onclick="deleteCustomer(${c.id}, '${c.name.replace(/'/g, "\\'")}')" class="btn-delete" title="حذف حساب العميل">🗑️</button>
+                <button data-customer-id="${c.id}" data-customer-name="${escapeHtml(c.name)}" class="btn-delete btn-delete-customer" title="حذف حساب العميل">🗑️</button>
             </td>
         </tr>
     `).join('');
+
+    // Event delegation instead of inline onclick — removes any risk of the
+    // customer's name breaking out of an HTML attribute context.
+    tbody.querySelectorAll('.btn-delete-customer').forEach(btn => {
+        btn.addEventListener('click', () => {
+            deleteCustomer(btn.dataset.customerId, btn.dataset.customerName);
+        });
+    });
 }
 
 async function deleteCustomer(id, name) {
