@@ -1,4 +1,4 @@
-const sqlite3 = require('sqlite3').verbose();
+const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 
@@ -23,38 +23,38 @@ if (dbPath !== ':memory:') {
     if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
 }
 
-const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-        console.error('Failed to connect to SQLite:', err);
-    } else if (process.env.NODE_ENV !== 'test') {
+let db;
+try {
+    db = new Database(dbPath);
+    if (process.env.NODE_ENV !== 'test') {
         console.log('✓ Connected to SQLite database:', dbPath);
     }
-});
+} catch (err) {
+    console.error('Failed to connect to SQLite:', err);
+}
 
 // Enable SQLite Write-Ahead Logging (WAL) for superior concurrency & performance (file-based dbs)
 if (dbPath !== ':memory:') {
-    db.run('PRAGMA journal_mode = WAL;');
+    db.pragma('journal_mode = WAL');
 }
-db.run('PRAGMA synchronous = NORMAL;');
-db.run('PRAGMA foreign_keys = ON;');
+db.pragma('synchronous = NORMAL');
+db.pragma('foreign_keys = ON');
 
 // Promisified helpers
-const query = (sql, params = []) => {
-    return new Promise((resolve, reject) => {
-        db.all(sql, params, (err, rows) => {
-            if (err) reject(err);
-            else resolve(rows);
-        });
-    });
+const query = async (sql, params = []) => {
+    const stmt = db.prepare(sql);
+    // better-sqlite3 throws if .all() is called on a statement that doesn't return data
+    if (!stmt.reader) {
+        Array.isArray(params) ? stmt.run(...params) : stmt.run(params);
+        return [];
+    }
+    return Array.isArray(params) ? stmt.all(...params) : stmt.all(params);
 };
 
-const run = (sql, params = []) => {
-    return new Promise((resolve, reject) => {
-        db.run(sql, params, function (err) {
-            if (err) reject(err);
-            else resolve({ lastID: this.lastID, changes: this.changes });
-        });
-    });
+const run = async (sql, params = []) => {
+    const stmt = db.prepare(sql);
+    const info = Array.isArray(params) ? stmt.run(...params) : stmt.run(params);
+    return { lastID: info.lastInsertRowid, changes: info.changes };
 };
 
 const initSchema = async () => {
@@ -64,13 +64,8 @@ const initSchema = async () => {
     await runSeeds();
 };
 
-const close = () => {
-    return new Promise((resolve, reject) => {
-        db.close((err) => {
-            if (err) reject(err);
-            else resolve();
-        });
-    });
+const close = async () => {
+    db.close();
 };
 
 module.exports = {
