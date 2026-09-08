@@ -418,10 +418,11 @@
 
                 <div class="form-group">
                     <label class="form-label" data-i18n="lblPayment">طريقة الدفع المتاحة *</label>
-                    <select id="customerPaymentMethod" class="form-select" disabled>
+                    <select id="customerPaymentMethod" class="form-select">
                         <option value="cod" data-i18n="payCod" selected>الدفع عند الاستلام (COD)</option>
+                        <option value="card" id="cardPaymentOption" style="display:none;">بطاقة ائتمانية / مدى (Mada, Visa, Mastercard)</option>
                     </select>
-                    <div class="payment-badges">
+                    <div class="payment-badges" id="paymentBadges">
                         <span class="payment-badge">COD</span>
                     </div>
                 </div>

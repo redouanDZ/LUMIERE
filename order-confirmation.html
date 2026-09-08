@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تأكيد الطلب — LUMIÈRE Botanics</title>
+    <link rel="stylesheet" href="css/lumiere.css">
+    <link rel="icon" href="images/serum.jpg" type="image/jpeg">
+</head>
+<body style="background:#0C0B0A; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;">
+    <div style="background:#181614; border:1px solid #C5A059; border-radius:20px; padding:45px; max-width:480px; width:100%; text-align:center;">
+        <div id="statusIcon" style="font-size:3rem; margin-bottom:16px;">⏳</div>
+        <h2 id="statusTitle" style="font-family:'Cormorant Garamond', serif; color:#E8D9B5; font-size:1.7rem; margin-bottom:12px;">
+            جاري التحقق من حالة الدفع...
+        </h2>
+        <p id="statusDesc" style="color:#A8A29E; font-size:0.95rem; line-height:1.7;"></p>
+        <a href="/" style="display:inline-block; margin-top:24px; color:#C5A059; text-decoration:underline;">العودة للمتجر</a>
+    </div>
+
+    <script>
+        // NOTE: this page is a UX convenience only. The Moyasar webhook
+        // (server-to-server, signature-verified) is the sole source of
+        // truth for whether an order is actually paid — this page just
+        // polls our own /status endpoint to reflect that truth to the user.
+        async function checkStatus() {
+            const params = new URLSearchParams(window.location.search);
+            const orderNumber = params.get('order');
+            const iconEl = document.getElementById('statusIcon');
+            const titleEl = document.getElementById('statusTitle');
+            const descEl = document.getElementById('statusDesc');
+
+            if (!orderNumber) {
+                iconEl.textContent = '⚠️';
+                titleEl.textContent = 'رقم طلب غير موجود';
+                return;
+            }
+
+            for (let attempt = 0; attempt < 8; attempt++) {
+                try {
+                    const res = await fetch(`/api/orders/${encodeURIComponent(orderNumber)}/status`);
+                    const data = await res.json();
+                    if (data.success) {
+                        const ps = data.data.payment_status;
+                        if (ps === 'paid') {
+                            iconEl.textContent = '🎉';
+                            titleEl.textContent = 'تم الدفع بنجاح!';
+                            descEl.textContent = `رقم طلبك ${data.data.order_number} — سيتم التواصل معك قريباً لترتيب الشحن.`;
+                            return;
+                        } else if (ps === 'payment_failed') {
+                            iconEl.textContent = '❌';
+                            titleEl.textContent = 'فشلت عملية الدفع';
+                            descEl.textContent = 'لم تكتمل عملية الدفع. يمكنك المحاولة مجدداً أو التواصل معنا.';
+                            return;
+                        }
+                    }
+                } catch (e) { /* retry */ }
+                await new Promise(r => setTimeout(r, 2000)); // webhook may arrive a couple seconds after redirect
+            }
+
+            iconEl.textContent = '⏳';
+            titleEl.textContent = 'الدفع قيد المعالجة';
+            descEl.textContent = 'قد يستغرق تأكيد الدفع بضع لحظات إضافية. سنرسل لك تأكيداً فور اكتماله.';
+        }
+        checkStatus();
+    </script>
+</body>
+</html>

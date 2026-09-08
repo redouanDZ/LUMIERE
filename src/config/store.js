@@ -32,6 +32,10 @@ const getDefaultConfig = () => ({
         // Public client ID only — safe to expose to the browser. The secret
         // verification always happens server-side via google-auth-library.
         googleClientId: process.env.GOOGLE_CLIENT_ID || null
+    },
+    payments: {
+        // Only a boolean flag — never expose MOYASAR_SECRET_KEY to the browser.
+        cardPaymentsEnabled: !!process.env.MOYASAR_SECRET_KEY
     }
 });
 

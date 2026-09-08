@@ -406,6 +406,12 @@ async function loadStoreConfig() {
             storeConfig = data.data;
             updateFooterWhatsapp();
             initGoogleSignIn();
+            if (storeConfig?.payments?.cardPaymentsEnabled) {
+                const cardOpt = document.getElementById('cardPaymentOption');
+                const badges = document.getElementById('paymentBadges');
+                if (cardOpt) cardOpt.style.display = 'block';
+                if (badges) badges.innerHTML += '<span class="payment-badge">Mada</span><span class="payment-badge">Visa</span>';
+            }
         }
     } catch (e) {
         console.warn('Config load fallback');
@@ -827,6 +833,7 @@ function setupEventListeners() {
             const country = document.getElementById('customerCountry')?.value || '';
             const city = document.getElementById('customerCity')?.value || '';
             const address = document.getElementById('customerAddress')?.value || '';
+            const paymentMethod = document.getElementById('customerPaymentMethod')?.value || 'cod';
 
             const subtotal = cart.reduce((sum, item) => sum + (item.basePriceUsd * item.qty), 0);
             const formattedTotal = formatPrice(subtotal);
@@ -839,7 +846,7 @@ function setupEventListeners() {
                 country,
                 city,
                 address,
-                paymentMethod: 'cod',
+                paymentMethod,
                 currency: currentCurrency,
                 couponCode: appliedCouponCode || '',
                 items: cart.map(item => ({ id: item.id, qty: item.qty }))
@@ -861,6 +868,14 @@ function setupEventListeners() {
                 const data = await res.json();
 
                 if (data.success) {
+                    // Card payment: redirect immediately to Moyasar's hosted
+                    // checkout instead of showing the local success message —
+                    // the order is only truly confirmed once the webhook
+                    // marks it 'paid'.
+                    if (data.paymentUrl) {
+                        window.location.href = data.paymentUrl;
+                        return;
+                    }
                     const orderNum = data.orderNumber;
                     if (msgBox) {
                         msgBox.style.display = 'block';

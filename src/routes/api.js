@@ -250,12 +250,57 @@ router.post('/orders', orderLimiter, validateOrderInput, async (req, res) => {
             await run('UPDATE customers SET reward_points = reward_points + 10 WHERE id = ?', [customerId]);
         }
 
+        // --- Card payment: create a Moyasar hosted-checkout invoice ---
+        // Card details never touch our server (PCI scope stays with Moyasar).
+        // Order is created first with payment_status='pending_payment'; the
+        // webhook below is the single source of truth that marks it 'paid'.
+        let paymentUrl = null;
+        if (paymentMethod === 'card') {
+            if (!process.env.MOYASAR_SECRET_KEY) {
+                // Payment method offered without a configured gateway is a
+                // store-owner setup error, not a customer-facing crash.
+                return res.status(503).json({
+                    success: false,
+                    message: 'الدفع بالبطاقة غير مُفعّل حالياً على هذا المتجر، الرجاء اختيار الدفع عند الاستلام'
+                });
+            }
+            try {
+                const baseUrl = process.env.PUBLIC_URL || `${req.protocol}://${req.get('host')}`;
+                const moyasarRes = await fetch('https://api.moyasar.com/v1/invoices', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Basic ' + Buffer.from(process.env.MOYASAR_SECRET_KEY + ':').toString('base64')
+                    },
+                    body: JSON.stringify({
+                        amount: Math.round(totalLocal * 100), // Moyasar expects the smallest currency unit (halalas)
+                        currency: currency || 'SAR',
+                        description: `LUMIÈRE Botanics — طلب ${orderNumber}`,
+                        callback_url: `${baseUrl}/order-confirmation.html?order=${orderNumber}`,
+                        metadata: { order_number: orderNumber, order_id: result.lastID }
+                    })
+                });
+                const invoice = await moyasarRes.json();
+                if (!moyasarRes.ok || !invoice.url) {
+                    console.error('[Moyasar] Invoice creation failed:', invoice);
+                    return res.status(502).json({ success: false, message: 'تعذر بدء عملية الدفع بالبطاقة، حاول لاحقاً أو اختر الدفع عند الاستلام' });
+                }
+                await run('UPDATE orders SET payment_status = ?, moyasar_invoice_id = ? WHERE id = ?',
+                    ['pending_payment', invoice.id, result.lastID]);
+                paymentUrl = invoice.url;
+            } catch (payErr) {
+                console.error('[Moyasar] Invoice request error:', payErr.message);
+                return res.status(502).json({ success: false, message: 'تعذر الاتصال ببوابة الدفع، حاول لاحقاً أو اختر الدفع عند الاستلام' });
+            }
+        }
+
         res.status(201).json({
             success: true,
             orderId: result.lastID,
             orderNumber,
             totalLocal,
             currency,
+            paymentUrl, // non-null only for successful card-payment invoices; frontend redirects here
             message: 'تم إنشاء الطلب بنجاح وتم خصم المخزون'
         });
     } catch (err) {
@@ -1019,6 +1064,88 @@ router.put('/customer/me', async (req, res) => {
         `, [name, phone, country, city, address, decoded.id]);
 
         res.json({ success: true, message: 'تم تحديث البيانات بنجاح' });
+    } catch (err) {
+        safeError(res, err);
+    }
+});
+
+// --- Moyasar Payment Webhook ---
+// IMPORTANT: Moyasar does NOT sign webhooks with HMAC. It simply echoes a
+// shared `secret_token` field inside the JSON body — a much weaker scheme
+// than HMAC, since a leaked/guessed token alone (not a per-request
+// signature) is enough to satisfy this check. To compensate, we treat the
+// webhook body only as a trigger and NEVER trust its `status` field:
+// instead we re-fetch the invoice directly from Moyasar's API using our
+// own secret key, and only that server-to-server response decides whether
+// an order is marked 'paid'. This makes body tampering irrelevant.
+router.post('/webhooks/moyasar', async (req, res) => {
+    try {
+        if (!process.env.MOYASAR_WEBHOOK_SECRET || !process.env.MOYASAR_SECRET_KEY) {
+            console.error('[Moyasar Webhook] MOYASAR_WEBHOOK_SECRET or MOYASAR_SECRET_KEY not configured — rejecting webhook');
+            return res.status(503).json({ success: false });
+        }
+
+        const receivedToken = req.body?.secret_token;
+        const expectedToken = process.env.MOYASAR_WEBHOOK_SECRET;
+        const tokenBuf = Buffer.from(String(receivedToken || ''));
+        const expectedBuf = Buffer.from(expectedToken);
+        const validToken = receivedToken
+            && tokenBuf.length === expectedBuf.length
+            && crypto.timingSafeEqual(tokenBuf, expectedBuf);
+
+        if (!validToken) {
+            console.warn('[Moyasar Webhook] Invalid or missing secret_token — possible forged request');
+            return res.status(401).json({ success: false, message: 'Invalid secret token' });
+        }
+
+        // The payment object nested in `data` references the invoice it paid.
+        const payment = req.body?.data;
+        const invoiceId = payment?.invoice_id;
+        if (!invoiceId) {
+            // Not every payment event is tied to an invoice (e.g. direct
+            // card charges outside our checkout flow) — nothing to do here.
+            return res.status(200).json({ success: true, ignored: true });
+        }
+
+        // Re-fetch the invoice from Moyasar directly — this is the actual
+        // source of truth, not anything in the webhook body itself.
+        const invoiceRes = await fetch(`https://api.moyasar.com/v1/invoices/${invoiceId}`, {
+            headers: { 'Authorization': 'Basic ' + Buffer.from(process.env.MOYASAR_SECRET_KEY + ':').toString('base64') }
+        });
+        if (!invoiceRes.ok) {
+            console.error('[Moyasar Webhook] Failed to re-fetch invoice', invoiceId, invoiceRes.status);
+            return res.status(502).json({ success: false });
+        }
+        const invoice = await invoiceRes.json();
+
+        const newStatus = invoice.status === 'paid' ? 'paid'
+            : (invoice.status === 'failed' || invoice.status === 'canceled' || invoice.status === 'expired') ? 'payment_failed'
+            : 'pending_payment';
+
+        await run('UPDATE orders SET payment_status = ? WHERE moyasar_invoice_id = ?', [newStatus, invoiceId]);
+
+        res.status(200).json({ success: true });
+    } catch (err) {
+        console.error('[Moyasar Webhook] Processing error:', err.message);
+        res.status(500).json({ success: false });
+    }
+});
+
+// Public: Check payment status for the post-checkout confirmation page.
+// Deliberately returns only non-sensitive status fields — no customer PII —
+// since this endpoint is unauthenticated and reachable by anyone with the
+// order number (which is not a secret, but shouldn't leak address/phone).
+router.get('/orders/:orderNumber/status', async (req, res) => {
+    try {
+        const orderNumber = sanitizeString(req.params.orderNumber);
+        const orders = await query(
+            'SELECT order_number, status, payment_status, total_local, currency FROM orders WHERE order_number = ?',
+            [orderNumber]
+        );
+        if (orders.length === 0) {
+            return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
+        }
+        res.json({ success: true, data: orders[0] });
     } catch (err) {
         safeError(res, err);
     }

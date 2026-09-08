@@ -24,6 +24,9 @@ const validateOrderInput = (req, res, next) => {
     city = sanitizeString(city);
     address = sanitizeString(address);
     paymentMethod = sanitizeString(paymentMethod);
+    if (paymentMethod && !['cod', 'card'].includes(paymentMethod)) {
+        return res.status(400).json({ success: false, message: 'طريقة دفع غير مدعومة' });
+    }
     currency = sanitizeString(currency) || 'SAR';
 
     if (!name || name.length < 2 || name.length > 100) {
