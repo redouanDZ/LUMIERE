@@ -43,12 +43,25 @@ db.pragma('foreign_keys = ON');
 // Promisified helpers
 const query = async (sql, params = []) => {
     const stmt = db.prepare(sql);
-    // better-sqlite3 throws if .all() is called on a statement that doesn't return data
-    if (!stmt.reader) {
-        Array.isArray(params) ? stmt.run(...params) : stmt.run(params);
-        return [];
+    try {
+        if (Array.isArray(params)) {
+            return stmt.all(...params);
+        } else {
+            return stmt.all(params);
+        }
+    } catch (err) {
+        // If it's a non-SELECT statement that doesn't return data, .all() throws a TypeError.
+        // Fallback to .run() in this case to simulate db.all returning an empty array.
+        if (err.message && err.message.includes('does not return data')) {
+            if (Array.isArray(params)) {
+                stmt.run(...params);
+            } else {
+                stmt.run(params);
+            }
+            return [];
+        }
+        throw err;
     }
-    return Array.isArray(params) ? stmt.all(...params) : stmt.all(params);
 };
 
 const run = async (sql, params = []) => {
