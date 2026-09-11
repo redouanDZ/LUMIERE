@@ -82,12 +82,30 @@ Alternatively, you can configure your environment manually:
 > - Never commit the `.env` file to version control. It is strictly excluded by `.gitignore`.
 > - The database seeds the administrator account upon the very first server launch (`npm start`). If you change credentials later, update them directly through the Admin Hub or via database migration.
 
-### 5. Start the Server
+### 5. Payment Gateway Setup (Client-Provided Credentials)
+
+Payment gateway accounts belong to the store owner. The implementer does **not** create a Moyasar account on the client's behalf and should never ask the client to enter private keys into the storefront or Admin Hub.
+
+The store owner should:
+1. Create and verify their own merchant account with Moyasar.
+2. Send the secret credentials through a secure private channel.
+3. Configure them as hosting-provider secrets, or place them temporarily in the local `.env` file during setup:
+
+```env
+MOYASAR_SECRET_KEY=the_client_secret_key
+MOYASAR_WEBHOOK_SECRET=the_client_webhook_secret
+PUBLIC_URL=https://the-client-store-domain.example
+ALLOWED_ORIGINS=https://the-client-store-domain.example
+```
+
+The secret keys are server-side only and are never sent to the browser. When `MOYASAR_SECRET_KEY` is empty, the store remains COD-only and the card option stays disabled. After configuration, the implementer should test one successful and one failed sandbox payment, then verify the webhook before enabling live payments.
+
+### 6. Start the Server
 ```bash
 npm start
 ```
 
-### 6. Access Platform
+### 7. Access Platform
 - **Storefront:** `http://localhost:4000`
 - **Admin Operations Hub:** `http://localhost:4000/admin/index.html`
 - **Health Check Endpoint:** `http://localhost:4000/health`

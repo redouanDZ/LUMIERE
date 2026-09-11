@@ -33,7 +33,7 @@ function switchTab(tabId) {
     if (targetTab) targetTab.classList.add('active');
 
     const navItems = document.querySelectorAll('.nav-item');
-    const tabMap = { 'overview': 0, 'orders': 1, 'products': 2, 'coupons': 3, 'customers': 4 };
+    const tabMap = { 'overview': 0, 'orders': 1, 'products': 2, 'coupons': 3, 'customers': 4, 'settings': 5 };
     if (navItems[tabMap[tabId]]) navItems[tabMap[tabId]].classList.add('active');
 
     const titles = {
@@ -41,7 +41,8 @@ function switchTab(tabId) {
         'orders': { h: 'إدارة وتتبع الطلبيات والشحن', sub: 'تحديث حالات الطلبيات والتواصل مع العميلات وتصدير البيانات' },
         'products': { h: 'كتالوج المستحضرات والأسعار', sub: 'إضافة وتعديل وحذف المنتجات في قاعدة البيانات' },
         'coupons': { h: 'إدارة قسائم الخصم والعروض (CRUD)', sub: 'إنشاء وتفعيل وتعطيل وحذف الكوبونات نهائياً' },
-        'customers': { h: 'قاعدة بيانات العميلات (CRM)', sub: 'سجل العميلات الأكثر ولاءً ومشترياتهن وتفاصيل التواصل' }
+        'customers': { h: 'قاعدة بيانات العميلات (CRM)', sub: 'سجل العميلات الأكثر ولاءً ومشترياتهن وتفاصيل التواصل' },
+        'settings': { h: 'إعدادات المتجر', sub: 'بيانات التواصل العامة التي تظهر للعملاء في المتجر' }
     };
 
     if (titles[tabId]) {
@@ -168,7 +169,45 @@ async function initDashboard() {
     await loadAllData();
     loadProducts();
     loadCoupons();
+    loadStoreSettings();
 }
+
+async function loadStoreSettings() {
+    try {
+        const res = await fetch('/api/admin/settings');
+        const data = await res.json();
+        if (!data.success) return;
+        document.getElementById('storeSupportEmail').value = data.data.contact.supportEmail || '';
+        document.getElementById('storeWhatsappNumber').value = data.data.contact.whatsappNumber || '';
+        document.getElementById('storeWhatsappMessage').value = data.data.contact.whatsappWelcomeMsgAr || '';
+    } catch (err) {
+        console.error('Store settings error:', err);
+    }
+}
+
+document.getElementById('storeSettingsForm')?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const message = document.getElementById('storeSettingsMsg');
+    message.textContent = 'جاري الحفظ...';
+    message.className = 'settings-message';
+    try {
+        const res = await fetch('/api/admin/settings', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                supportEmail: document.getElementById('storeSupportEmail').value,
+                whatsappNumber: document.getElementById('storeWhatsappNumber').value,
+                whatsappWelcomeMsgAr: document.getElementById('storeWhatsappMessage').value
+            })
+        });
+        const data = await res.json();
+        message.textContent = data.message || (data.success ? 'تم الحفظ' : 'تعذر الحفظ');
+        message.className = data.success ? 'settings-message success' : 'settings-message error';
+    } catch (err) {
+        message.textContent = 'تعذر الاتصال بالخادم';
+        message.className = 'settings-message error';
+    }
+});
 
 async function loadAllData() {
     try {
@@ -237,6 +276,7 @@ function renderOrders(orders) {
                 <td>
                     <select class="status-select" onchange="updateOrderStatus(${o.id}, this.value)">
                         <option value="pending" ${o.status === 'pending' ? 'selected' : ''}>قيد التجهيز</option>
+                        <option value="processing" ${o.status === 'processing' ? 'selected' : ''}>جاري التحضير</option>
                         <option value="shipped" ${o.status === 'shipped' ? 'selected' : ''}>تم الشحن ✈️</option>
                         <option value="delivered" ${o.status === 'delivered' ? 'selected' : ''}>تم التسليم ✓</option>
                         <option value="cancelled" ${o.status === 'cancelled' ? 'selected' : ''}>ملغي ✕</option>

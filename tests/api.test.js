@@ -168,6 +168,46 @@ describe('LUMIÈRE Botanics Comprehensive Test Suite', () => {
             expect(res.statusCode).toBe(400);
             expect(res.body.success).toBe(false);
         });
+
+        it('should reject duplicate cart lines that exceed the per-product limit', async () => {
+            const res = await request(app)
+                .post('/api/orders')
+                .send({
+                    name: 'Duplicate Line Test',
+                    phone: '+966512345678',
+                    country: 'Saudi Arabia',
+                    city: 'Riyadh',
+                    address: 'Olaya Street 10',
+                    items: [
+                        { id: 'serum', qty: 12 },
+                        { id: 'serum', qty: 9 }
+                    ]
+                });
+
+            expect(res.statusCode).toBe(400);
+            expect(res.body.message).toContain('20');
+        });
+
+        it('should reject card checkout before creating an order when the gateway is not configured', async () => {
+            if (process.env.MOYASAR_SECRET_KEY) return;
+
+            const before = await query('SELECT COUNT(*) as count FROM orders');
+            const res = await request(app)
+                .post('/api/orders')
+                .send({
+                    name: 'Card Gateway Test',
+                    phone: '+966512345678',
+                    country: 'Saudi Arabia',
+                    city: 'Riyadh',
+                    address: 'Olaya Street 10',
+                    paymentMethod: 'card',
+                    items: [{ id: 'serum', qty: 1 }]
+                });
+            const after = await query('SELECT COUNT(*) as count FROM orders');
+
+            expect(res.statusCode).toBe(503);
+            expect(after[0].count).toBe(before[0].count);
+        });
     });
 
     // 5. ADMIN AUTH & PASSWORD CHANGE

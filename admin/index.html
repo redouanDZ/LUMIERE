@@ -134,6 +134,10 @@
                     <span class="nav-icon">👥</span>
                     <span>قاعدة العملاء</span>
                 </li>
+                <li class="nav-item" onclick="switchTab('settings')">
+                    <span class="nav-icon">⚙️</span>
+                    <span>إعدادات المتجر</span>
+                </li>
             </ul>
         </div>
 
@@ -373,6 +377,37 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+
+        <!-- TAB 6: STORE SETTINGS -->
+        <div id="tab-settings" class="tab-content">
+            <div class="section-card settings-card">
+                <div class="section-header">
+                    <div>
+                        <div class="section-title">إعدادات بيانات التواصل</div>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">هذه البيانات تظهر للعملاء في المتجر ورسائل واتساب فقط</p>
+                    </div>
+                </div>
+                <form id="storeSettingsForm" class="settings-form">
+                    <div class="form-group">
+                        <label for="storeSupportEmail">البريد الإلكتروني لخدمة العملاء</label>
+                        <input type="email" id="storeSupportEmail" class="form-control" placeholder="support@yourstore.com" required maxlength="160">
+                    </div>
+                    <div class="form-group">
+                        <label for="storeWhatsappNumber">رقم واتساب المتجر</label>
+                        <input type="tel" id="storeWhatsappNumber" class="form-control" placeholder="+966500000000" required maxlength="24">
+                    </div>
+                    <div class="form-group">
+                        <label for="storeWhatsappMessage">رسالة الترحيب في واتساب</label>
+                        <textarea id="storeWhatsappMessage" class="form-control settings-textarea" maxlength="240" required></textarea>
+                    </div>
+                    <div class="settings-actions">
+                        <button type="submit" class="btn-gold">حفظ بيانات التواصل 💾</button>
+                        <span id="storeSettingsMsg" role="status"></span>
+                    </div>
+                </form>
+                <div class="settings-note">مفاتيح الدفع السرية لا تُحفظ هنا. يرسلها العميل لك وتُضاف إلى أسرار الاستضافة فقط.</div>
             </div>
         </div>
 

@@ -37,8 +37,8 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 app.use(cors({
     origin: (origin, callback) => {
         const publicUrl = process.env.PUBLIC_URL ? process.env.PUBLIC_URL.replace(/\/$/, '') : null;
-        // Allow requests with no origin, matched origins, Render domains, or PUBLIC_URL
-        if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.onrender.com') || origin === publicUrl) {
+        // Allow requests with no origin, explicitly configured origins, or PUBLIC_URL.
+        if (!origin || allowedOrigins.includes(origin) || origin === publicUrl) {
             return callback(null, true);
         }
         const error = new Error('Blocked by CORS policy: Origin not allowed');

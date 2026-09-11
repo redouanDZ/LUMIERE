@@ -453,6 +453,48 @@ body {
     box-shadow: 0 0 0 3px var(--gold-glow);
 }
 
+.settings-card {
+    max-width: 760px;
+}
+
+.settings-form {
+    max-width: 620px;
+}
+
+.settings-textarea {
+    min-height: 110px;
+    resize: vertical;
+}
+
+.settings-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.settings-message {
+    font-size: 0.85rem;
+}
+
+.settings-message.success {
+    color: var(--success);
+}
+
+.settings-message.error {
+    color: var(--danger);
+}
+
+.settings-note {
+    margin-top: 22px;
+    padding: 12px 14px;
+    border: 1px solid var(--gold-border);
+    border-radius: var(--radius-sm);
+    color: var(--gold-light);
+    font-size: 0.82rem;
+    line-height: 1.7;
+}
+
 /* Tab Sections */
 .tab-content {
     display: none;
@@ -518,9 +560,6 @@ body {
 }
 
 @media (max-width: 1200px) {
-}
-
-@media (max-width: 992px) {
     .admin-sidebar {
         position: fixed;
         right: -300px;
@@ -545,6 +584,11 @@ body {
 
     .sidebar-close-btn {
         display: block;
+    }
+
+    .section-header {
+        gap: 16px;
+        flex-wrap: wrap;
     }
 }
 

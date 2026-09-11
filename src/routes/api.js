@@ -69,13 +69,58 @@ const safeError = (res, err, defaultMsg) => {
 // GET Products
 
 // Public: Get Public Store Configuration & Branding
-router.get('/config', (req, res) => {
+router.get('/config', async (req, res) => {
     try {
         const { getStoreConfig } = require('../config/store');
-        const config = getStoreConfig(req.headers['x-tenant-id'] || null);
+        const config = await getStoreConfig(req.headers['x-tenant-id'] || null);
         res.json({ success: true, data: config });
     } catch (err) {
         res.status(500).json({ success: false, message: 'Failed to load configuration' });
+    }
+});
+
+// Admin: Store contact settings (public-facing values only; payment secrets stay in env).
+router.get('/admin/settings', requireAdmin, async (req, res) => {
+    try {
+        const { getStoreConfig } = require('../config/store');
+        const config = await getStoreConfig();
+        res.json({ success: true, data: { contact: config.contact } });
+    } catch (err) {
+        safeError(res, err, 'تعذر تحميل إعدادات المتجر');
+    }
+});
+
+router.patch('/admin/settings', requireAdmin, async (req, res) => {
+    try {
+        const email = sanitizeString(req.body.supportEmail || '').trim();
+        const whatsapp = String(req.body.whatsappNumber || '').trim();
+        const welcomeMessage = sanitizeString(req.body.whatsappWelcomeMsgAr || '').trim();
+
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 160) {
+            return res.status(400).json({ success: false, message: 'البريد الإلكتروني غير صالح' });
+        }
+        if (!/^\+?[0-9\s()-]{8,24}$/.test(whatsapp)) {
+            return res.status(400).json({ success: false, message: 'رقم واتساب غير صالح' });
+        }
+        if (!welcomeMessage || welcomeMessage.length > 240) {
+            return res.status(400).json({ success: false, message: 'رسالة الترحيب مطلوبة وألا تتجاوز 240 حرفاً' });
+        }
+
+        const settings = [
+            ['support_email', email],
+            ['whatsapp_number', whatsapp],
+            ['whatsapp_welcome_msg_ar', welcomeMessage]
+        ];
+        for (const [key, value] of settings) {
+            await run(`
+                INSERT INTO store_settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
+            `, [key, value]);
+        }
+
+        res.json({ success: true, message: 'تم حفظ بيانات التواصل بنجاح' });
+    } catch (err) {
+        safeError(res, err, 'تعذر حفظ إعدادات المتجر');
     }
 });
 
@@ -135,8 +180,15 @@ const DUMMY_BCRYPT_HASH = '$2a$10$abcdefghijklmnopqrstuuabcdefghijklmnopqrstuuab
 // Create Order
 router.post('/orders', orderLimiter, validateOrderInput, async (req, res) => {
     try {
-        const { name, phone, country, city, address, paymentMethod, currency, items } = req.sanitizedOrder;
+        const { name, phone, country, city, address, paymentMethod, currency, items, bundle } = req.sanitizedOrder;
         const couponCode = sanitizeString(req.body.couponCode || '').toUpperCase();
+
+        if (paymentMethod === 'card' && !process.env.MOYASAR_SECRET_KEY) {
+            return res.status(503).json({
+                success: false,
+                message: 'الدفع بالبطاقة غير مُفعّل حالياً على هذا المتجر، الرجاء اختيار الدفع عند الاستلام'
+            });
+        }
 
         let customerId = null;
         try {
@@ -186,6 +238,15 @@ router.post('/orders', orderLimiter, validateOrderInput, async (req, res) => {
             });
         }
 
+        if (bundle) {
+            const bundleIds = ['serum', 'cream', 'cleanser'];
+            const requestedBundleIds = processedItems.map(item => item.id).sort();
+            if (processedItems.length !== 3 || requestedBundleIds.join(',') !== bundleIds.slice().sort().join(',') || processedItems.some(item => item.qty !== 1)) {
+                return res.status(400).json({ success: false, message: 'تركيبة الباقة غير صالحة' });
+            }
+            totalUsd *= 0.7;
+        }
+
         let discount = 0;
         let appliedCouponId = null;
         if (couponCode) {
@@ -220,11 +281,11 @@ router.post('/orders', orderLimiter, validateOrderInput, async (req, res) => {
                 result = await run(`
                     INSERT INTO orders (
                         order_number, customer_id, customer_name, customer_phone, customer_country, customer_city,
-                        customer_address, payment_method, currency, total_usd, total_local, items_json
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        customer_address, payment_method, currency, total_usd, total_local, items_json, coupon_code
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `, [
                     orderNumber, customerId, name, phone, country, city, address, paymentMethod, currency,
-                    totalUsd.toFixed(2), totalLocal, JSON.stringify(processedItems)
+                    totalUsd.toFixed(2), totalLocal, JSON.stringify(processedItems), couponCode || null
                 ]);
                 break;
             } catch (insertErr) {
@@ -240,13 +301,14 @@ router.post('/orders', orderLimiter, validateOrderInput, async (req, res) => {
             await run('UPDATE products SET stock = MAX(0, stock - ?) WHERE id = ?', [item.qty, item.id]);
         }
 
-        // Increment coupon use count if applied
-        if (appliedCouponId) {
+        // COD orders are final at creation time. Card orders reserve stock but
+        // wait for the verified webhook before awarding benefits or consuming a coupon.
+        if (appliedCouponId && paymentMethod === 'cod') {
             await run('UPDATE coupons SET used_count = used_count + 1 WHERE id = ?', [appliedCouponId]);
         }
 
         // Award reward points if registered customer
-        if (customerId) {
+        if (customerId && paymentMethod === 'cod') {
             await run('UPDATE customers SET reward_points = reward_points + 10 WHERE id = ?', [customerId]);
         }
 
@@ -256,14 +318,6 @@ router.post('/orders', orderLimiter, validateOrderInput, async (req, res) => {
         // webhook below is the single source of truth that marks it 'paid'.
         let paymentUrl = null;
         if (paymentMethod === 'card') {
-            if (!process.env.MOYASAR_SECRET_KEY) {
-                // Payment method offered without a configured gateway is a
-                // store-owner setup error, not a customer-facing crash.
-                return res.status(503).json({
-                    success: false,
-                    message: 'الدفع بالبطاقة غير مُفعّل حالياً على هذا المتجر، الرجاء اختيار الدفع عند الاستلام'
-                });
-            }
             try {
                 const baseUrl = process.env.PUBLIC_URL || `${req.protocol}://${req.get('host')}`;
                 const moyasarRes = await fetch('https://api.moyasar.com/v1/invoices', {
@@ -460,20 +514,21 @@ router.post('/auth/reset-password', authLimiter, async (req, res) => {
 // 1. STATS & ANALYTICS
 router.get('/admin/stats', requireAdmin, async (req, res) => {
     try {
-        const totalOrders = await query('SELECT COUNT(*) as count, SUM(total_usd) as totalRevenue FROM orders');
+        const paidOrderFilter = "WHERE payment_status IN ('paid', 'pending_cod') AND status != 'cancelled'";
+        const totalOrders = await query(`SELECT COUNT(*) as count, SUM(total_usd) as totalRevenue FROM orders ${paidOrderFilter}`);
         const ordersList = await query('SELECT * FROM orders ORDER BY id DESC LIMIT 50');
         const productsCount = await query('SELECT COUNT(*) as count FROM products');
         const couponsCount = await query('SELECT COUNT(*) as count FROM coupons');
 
         const countryStats = await query(`
             SELECT customer_country as country, COUNT(*) as count, SUM(total_usd) as revenue
-            FROM orders GROUP BY customer_country ORDER BY count DESC LIMIT 5
+            FROM orders ${paidOrderFilter} GROUP BY customer_country ORDER BY count DESC LIMIT 5
         `);
 
         const customersList = await query(`
             SELECT c.id, c.name, c.phone, c.city, c.country, 
-                   COUNT(o.id) as total_orders, 
-                   COALESCE(SUM(o.total_usd), 0) as total_spent,
+                   COUNT(CASE WHEN o.payment_status IN ('paid', 'pending_cod') AND o.status != 'cancelled' THEN o.id END) as total_orders,
+                   COALESCE(SUM(CASE WHEN o.payment_status IN ('paid', 'pending_cod') AND o.status != 'cancelled' THEN o.total_usd ELSE 0 END), 0) as total_spent,
                    MAX(o.created_at) as last_order_date
             FROM customers c
             LEFT JOIN orders o ON c.id = o.customer_id
@@ -666,17 +721,25 @@ router.post('/admin/upload-image', requireAdmin, async (req, res) => {
 router.patch('/admin/products/:id', requireAdmin, async (req, res) => {
     try {
         const { price_usd, stock, image } = req.body;
+        const parsedPrice = Number(price_usd);
+        const parsedStock = Number(stock);
+        if (!Number.isFinite(parsedPrice) || parsedPrice <= 0 || !Number.isInteger(parsedStock) || parsedStock < 0) {
+            return res.status(400).json({ success: false, message: 'السعر والمخزون غير صالحين' });
+        }
+        if (image && (!/^images\/uploads\/[a-zA-Z0-9._-]+$/.test(image.trim()) || image.includes('..'))) {
+            return res.status(400).json({ success: false, message: 'مسار صورة غير صالح' });
+        }
         if (image && typeof image === 'string' && image.trim().length > 0) {
             await run('UPDATE products SET price_usd = ?, stock = ?, image = ? WHERE id = ?', [
-                parseFloat(price_usd),
-                parseInt(stock),
+                parsedPrice,
+                parsedStock,
                 image.trim(),
                 req.params.id
             ]);
         } else {
             await run('UPDATE products SET price_usd = ?, stock = ? WHERE id = ?', [
-                parseFloat(price_usd),
-                parseInt(stock),
+                parsedPrice,
+                parsedStock,
                 req.params.id
             ]);
         }
@@ -1122,7 +1185,47 @@ router.post('/webhooks/moyasar', async (req, res) => {
             : (invoice.status === 'failed' || invoice.status === 'canceled' || invoice.status === 'expired') ? 'payment_failed'
             : 'pending_payment';
 
-        await run('UPDATE orders SET payment_status = ? WHERE moyasar_invoice_id = ?', [newStatus, invoiceId]);
+        const orders = await query(
+            'SELECT id, customer_id, items_json, coupon_code, payment_status FROM orders WHERE moyasar_invoice_id = ?',
+            [invoiceId]
+        );
+        if (orders.length === 0) {
+            return res.status(200).json({ success: true, ignored: true });
+        }
+
+        const order = orders[0];
+        if (newStatus === 'paid') {
+            const updated = await run(
+                "UPDATE orders SET payment_status = 'paid' WHERE moyasar_invoice_id = ? AND payment_status != 'paid'",
+                [invoiceId]
+            );
+            if (updated.changes > 0) {
+                if (order.coupon_code) {
+                    await run('UPDATE coupons SET used_count = used_count + 1 WHERE code = ? AND is_active = 1', [order.coupon_code]);
+                }
+                if (order.customer_id) {
+                    await run('UPDATE customers SET reward_points = reward_points + 10 WHERE id = ?', [order.customer_id]);
+                }
+            }
+        } else if (newStatus === 'payment_failed') {
+            const updated = await run(
+                "UPDATE orders SET payment_status = 'payment_failed' WHERE moyasar_invoice_id = ? AND payment_status = 'pending_payment'",
+                [invoiceId]
+            );
+            if (updated.changes > 0) {
+                let reservedItems = [];
+                try {
+                    reservedItems = JSON.parse(order.items_json || '[]');
+                } catch (parseErr) {
+                    console.error('[Moyasar Webhook] Invalid order items JSON:', order.id);
+                }
+                for (const item of reservedItems) {
+                    await run('UPDATE products SET stock = stock + ? WHERE id = ?', [item.qty, item.id]);
+                }
+            }
+        } else {
+            await run('UPDATE orders SET payment_status = ? WHERE moyasar_invoice_id = ?', [newStatus, invoiceId]);
+        }
 
         res.status(200).json({ success: true });
     } catch (err) {

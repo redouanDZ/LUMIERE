@@ -4,6 +4,8 @@
 // to support dynamic multi-tenant / SaaS lookups in the future.
 // =================================================================
 
+const { query } = require('../database/db');
+
 const getDefaultConfig = () => ({
     brand: {
         nameAr: process.env.STORE_NAME_AR || 'لوميير باريس',
@@ -48,11 +50,25 @@ const getDefaultConfig = () => ({
  * @param {string|null} tenantId - Optional identifier for future multi-tenant routing.
  * @returns {object} Store configuration object.
  */
-const getStoreConfig = (tenantId = null) => {
+const getStoreConfig = async (tenantId = null) => {
     // If future SaaS multi-tenancy is active, lookup tenant-specific config here:
     // if (tenantId) return await fetchTenantConfigFromDb(tenantId);
 
-    return getDefaultConfig();
+    let settings = {};
+    try {
+        const rows = await query('SELECT key, value FROM store_settings');
+        settings = Object.fromEntries(rows.map(row => [row.key, row.value]));
+    } catch (err) {
+        // Keep environment defaults available during first boot before migrations run.
+    }
+
+    const setting = (key, fallback) => settings[key] || fallback;
+
+    const config = getDefaultConfig();
+    config.contact.supportEmail = setting('support_email', config.contact.supportEmail);
+    config.contact.whatsappNumber = setting('whatsapp_number', config.contact.whatsappNumber);
+    config.contact.whatsappWelcomeMsgAr = setting('whatsapp_welcome_msg_ar', config.contact.whatsappWelcomeMsgAr);
+    return config;
 };
 
 module.exports = {

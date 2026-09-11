@@ -1411,6 +1411,16 @@ body {
     .header-container {
         padding: 10px 14px;
         gap: 8px;
+        flex-wrap: wrap;
+    }
+    .header-container > div:first-child {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+    .header-controls {
+        width: 100%;
+        justify-content: flex-end;
+        min-width: 0;
     }
     .logo-text {
         font-size: 1.4rem;
@@ -1484,6 +1494,9 @@ body {
     .header-container {
         padding: 8px 10px;
     }
+    .header-controls {
+        justify-content: space-between;
+    }
     .logo-text {
         font-size: 1.25rem;
         letter-spacing: 1.5px;
@@ -1501,7 +1514,221 @@ body {
         font-size: 0.68rem;
         padding: 3px 4px;
     }
+    .header-controls .select-pill {
+        min-width: 0;
+    }
+    .products-section,
+    .clinical-section,
+    .ritual-section,
+    .reviews-section,
+    .faq-section {
+        padding-inline: 14px;
+    }
+    .products-grid {
+        grid-template-columns: minmax(0, 1fr);
+        width: 100%;
+    }
+    .product-actions {
+        grid-template-columns: 1fr 1fr;
+    }
     .product-image-wrap {
         height: 230px;
+    }
+}
+
+/* Final responsive polish */
+img,
+svg {
+    max-width: 100%;
+}
+
+button,
+select,
+input,
+textarea {
+    font: inherit;
+}
+
+.mobile-menu-btn {
+    color: var(--text-primary);
+    flex: 0 0 auto;
+}
+
+.header-container > div,
+.header-controls,
+.hero-text-col,
+.bundle-content,
+.review-card,
+.product-card {
+    min-width: 0;
+}
+
+.product-title,
+.product-desc,
+.review-text,
+.review-author,
+.review-product-tag,
+.bundle-content h2,
+.bundle-content p,
+.faq-question span:first-child {
+    overflow-wrap: anywhere;
+}
+
+.review-header {
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.bundle-image-box {
+    min-height: 320px;
+}
+
+@media (max-width: 1100px) {
+    .header-container {
+        gap: 16px;
+    }
+
+    .nav-links {
+        gap: 16px;
+    }
+
+    .header-controls {
+        gap: 8px;
+    }
+
+    #customerAuthLabel {
+        display: none;
+    }
+
+    #customerAuthBtn {
+        padding-inline: 10px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .announcement-bar {
+        min-height: 38px;
+        padding: 8px 12px;
+        gap: 8px;
+        font-size: 0.75rem;
+        line-height: 1.35;
+    }
+
+    .lumiere-hero {
+        padding: 48px 16px 56px;
+    }
+
+    .hero-actions,
+    .hero-actions .btn-luxury,
+    .hero-actions .btn-outline {
+        width: 100%;
+    }
+
+    .hero-actions .btn-luxury,
+    .hero-actions .btn-outline {
+        justify-content: center;
+    }
+
+    .trust-container,
+    .clinical-stats-grid,
+    .ritual-grid,
+    .reviews-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .trust-container {
+        gap: 16px;
+    }
+
+    .products-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .product-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .bundle-section {
+        padding: 56px 16px;
+    }
+
+    .bundle-image-box {
+        min-height: 240px;
+    }
+
+    .bundle-content h2 {
+        font-size: 2rem;
+    }
+
+    .qv-grid {
+        min-width: 0;
+    }
+
+    .qv-tab-btn {
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
+    .qv-grid > div:last-child > div[style*="border-bottom"] {
+        overflow-x: auto;
+        padding-bottom: 2px;
+    }
+}
+
+@media (max-width: 520px) {
+    .header-container {
+        align-items: center;
+    }
+
+    .header-controls {
+        overflow-x: auto;
+        justify-content: flex-start;
+        padding-bottom: 2px;
+        scrollbar-width: none;
+    }
+
+    .header-controls::-webkit-scrollbar {
+        display: none;
+    }
+
+    .select-pill {
+        flex: 0 0 auto;
+    }
+
+    .products-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .product-actions {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .section-header {
+        margin-bottom: 28px;
+    }
+
+    .filter-pills {
+        justify-content: flex-start;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        padding-bottom: 4px;
+        scrollbar-width: none;
+    }
+
+    .filter-pills::-webkit-scrollbar {
+        display: none;
+    }
+
+    .filter-btn {
+        flex: 0 0 auto;
+    }
+
+    .review-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .footer-bottom {
+        align-items: stretch;
     }
 }

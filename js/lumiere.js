@@ -375,6 +375,7 @@ let currentCurrency = 'SAR';
 let currentCategory = 'all';
 let discountPercent = 0;
 let appliedCouponCode = '';
+let activeBundle = false;
 let storeConfig = null;
 let cart = [];
 
@@ -525,7 +526,7 @@ function renderProducts() {
     const bundleCurrent = document.getElementById('bundlePriceCurrent');
     const bundleOriginal = document.getElementById('bundlePriceOriginal');
     if (bundleCurrent && bundleOriginal) {
-        bundleCurrent.textContent = formatPrice(98);
+        bundleCurrent.textContent = formatPrice(138 * 0.7);
         bundleOriginal.textContent = formatPrice(138);
     }
 }
@@ -542,7 +543,7 @@ function openQuickView(productId) {
     const p = PRODUCTS.find(prod => prod.id === productId);
     if (!p) return;
 
-    const modal = document.getElementById('quickViewModal');
+    const modal = document.getElementById('quickViewOverlay');
     if (!modal) return;
 
     document.getElementById('qvImage').src = p.image;
@@ -579,6 +580,8 @@ function addToCart(productId) {
     const prod = PRODUCTS.find(p => p.id === productId);
     if (!prod) return;
 
+    activeBundle = false;
+
     const existing = cart.find(item => item.id === productId);
     if (existing) {
         existing.qty += 1;
@@ -597,6 +600,7 @@ function quickBuy(productId) {
 }
 
 function quickBuyBundle() {
+    activeBundle = true;
     cart = [
         { ...PRODUCTS[0], qty: 1, basePriceUsd: 34 },
         { ...PRODUCTS[1], qty: 1, basePriceUsd: 38 },
@@ -849,6 +853,7 @@ function setupEventListeners() {
                 paymentMethod,
                 currency: currentCurrency,
                 couponCode: appliedCouponCode || '',
+                bundle: activeBundle,
                 items: cart.map(item => ({ id: item.id, qty: item.qty }))
             };
 

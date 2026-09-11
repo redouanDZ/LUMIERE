@@ -16,7 +16,7 @@ const sanitizeString = (str) => {
 };
 
 const validateOrderInput = (req, res, next) => {
-    let { name, phone, country, city, address, paymentMethod, currency, items } = req.body;
+    let { name, phone, country, city, address, paymentMethod, currency, items, bundle } = req.body;
 
     name = sanitizeString(name);
     phone = typeof phone === 'string' ? phone.trim() : '';
@@ -64,7 +64,7 @@ const validateOrderInput = (req, res, next) => {
         return res.status(400).json({ success: false, message: 'عدد المنتجات في السلة يتجاوز الحد المسموح' });
     }
 
-    const validatedItems = [];
+    const itemQuantities = new Map();
     for (const item of items) {
         if (!item || typeof item !== 'object' || typeof item.id !== 'string') {
             return res.status(400).json({ success: false, message: 'بيانات المنتج في السلة غير صالحة' });
@@ -74,7 +74,15 @@ const validateOrderInput = (req, res, next) => {
         if (isNaN(qty) || qty < 1 || qty > 20) {
             return res.status(400).json({ success: false, message: 'كمية المنتج يجب أن تتراوح بين 1 و 20 قطعة' });
         }
-        validatedItems.push({ id: cleanId, qty });
+        itemQuantities.set(cleanId, (itemQuantities.get(cleanId) || 0) + qty);
+    }
+
+    const validatedItems = [];
+    for (const [id, qty] of itemQuantities) {
+        if (qty > 20) {
+            return res.status(400).json({ success: false, message: 'كمية المنتج يجب ألا تتجاوز 20 قطعة' });
+        }
+        validatedItems.push({ id, qty });
     }
 
     req.sanitizedOrder = {
@@ -85,7 +93,8 @@ const validateOrderInput = (req, res, next) => {
         address,
         paymentMethod: paymentMethod || 'cod',
         currency,
-        items: validatedItems
+        items: validatedItems,
+        bundle: bundle === true
     };
 
     next();
