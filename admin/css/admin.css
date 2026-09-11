@@ -149,6 +149,8 @@ body {
 .admin-main {
     margin-inline-start: 280px;
     flex: 1;
+    min-width: 0;
+    width: 100%;
     padding: 35px 40px;
     min-height: 100vh;
 }
