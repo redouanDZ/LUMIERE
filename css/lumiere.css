@@ -1071,6 +1071,7 @@ body {
 
 .form-input, .form-select {
     width: 100%;
+    max-width: 100%;
     padding: 12px 14px;
     border-radius: var(--radius-sm);
     border: 1px solid var(--border-subtle);
@@ -1078,6 +1079,13 @@ body {
     outline: none;
     font-family: inherit;
     transition: var(--transition);
+}
+
+.form-select {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-inline-end: 30px; /* space for default dropdown arrow */
 }
 
 .form-input:focus, .form-select:focus {
