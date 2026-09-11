@@ -210,9 +210,20 @@ body {
 /* Metrics Cards */
 .metrics-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 22px;
     margin-bottom: 35px;
+}
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+    margin-bottom: 35px;
+}
+@media (min-width: 992px) {
+    .charts-grid {
+        grid-template-columns: 2fr 1fr;
+    }
 }
 
 .metric-card {
@@ -504,10 +515,6 @@ body {
 }
 
 @media (max-width: 1200px) {
-    .metrics-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 16px;
-    }
 }
 
 @media (max-width: 992px) {
@@ -561,9 +568,12 @@ body {
     }
 
     .metrics-grid {
-        grid-template-columns: 1fr 1fr;
         gap: 12px;
         margin-bottom: 24px;
+    }
+    
+    .charts-grid {
+        grid-template-columns: 1fr;
     }
 
     .metric-card {
