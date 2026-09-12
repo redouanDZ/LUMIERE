@@ -27,7 +27,7 @@ module.exports = {
                     original_price_usd: 65,
                     rating: 4.95,
                     reviews_count: 342,
-                    image: 'images/serum.jpg',
+                    image: 'images/serum.webp',
                     badge_ar: 'الأكثر مبيعاً',
                     badge_en: 'Best Seller'
                 },
@@ -49,7 +49,7 @@ module.exports = {
                     original_price_usd: 72,
                     rating: 4.92,
                     reviews_count: 284,
-                    image: 'images/cream.jpg',
+                    image: 'images/cream.webp',
                     badge_ar: 'جائزة النقاء 2026',
                     badge_en: 'Award Winner'
                 },
@@ -71,7 +71,7 @@ module.exports = {
                     original_price_usd: 58,
                     rating: 4.89,
                     reviews_count: 219,
-                    image: 'images/eye_cream.jpg',
+                    image: 'images/eye_cream.webp',
                     badge_ar: 'مفضل الخبراء',
                     badge_en: 'Dermatologist Pick'
                 },
@@ -93,7 +93,7 @@ module.exports = {
                     original_price_usd: 45,
                     rating: 4.88,
                     reviews_count: 194,
-                    image: 'images/cleanser.jpg',
+                    image: 'images/cleanser.webp',
                     badge_ar: 'طبيعي 100%',
                     badge_en: '100% Organic'
                 },
@@ -115,7 +115,7 @@ module.exports = {
                     original_price_usd: 46,
                     rating: 4.91,
                     reviews_count: 168,
-                    image: 'images/toner.jpg',
+                    image: 'images/toner.webp',
                     badge_ar: 'جديد ومميز',
                     badge_en: 'New Arrival'
                 },
@@ -137,7 +137,7 @@ module.exports = {
                     original_price_usd: 52,
                     rating: 4.94,
                     reviews_count: 227,
-                    image: 'images/mask.jpg',
+                    image: 'images/mask.webp',
                     badge_ar: 'أعلى تقييم',
                     badge_en: 'Top Rated'
                 }

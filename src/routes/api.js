@@ -642,7 +642,7 @@ router.post('/admin/products', requireAdmin, async (req, res) => {
         // image is a path/filename, not free text — restrict to safe path characters
         const cleanImage = (typeof image === 'string' && /^[a-zA-Z0-9/_.-]+$/.test(image))
             ? image
-            : 'images/serum.jpg';
+            : 'images/serum.webp';
 
         await run(`
             INSERT INTO products (

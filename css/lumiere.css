@@ -447,7 +447,7 @@ body {
     font-size: 0.8rem;
     letter-spacing: 2px;
     text-transform: uppercase;
-    color: var(--accent-gold);
+    color: #765718;
     font-weight: 700;
 }
 
@@ -570,7 +570,7 @@ body {
 }
 
 .product-rating span.review-count {
-    color: var(--text-muted);
+    color: #6B6258;
     font-size: 0.75rem;
     margin-inline-start: 4px;
 }
@@ -600,7 +600,7 @@ body {
 
 .price-original {
     font-size: 0.9rem;
-    color: var(--text-muted);
+    color: #6B6258;
     text-decoration: line-through;
     margin-inline-start: 8px;
 }
@@ -777,7 +777,7 @@ body {
 }
 
 .verified-badge {
-    color: #10B981;
+    color: #087A4B;
     font-size: 0.75rem;
     font-weight: 600;
     display: flex;

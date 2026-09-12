@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LUMIÈRE Paris — Luxury Operations Hub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="css/admin.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     <style>
         .btn-delete {
             background: rgba(239, 68, 68, 0.15);
@@ -466,7 +468,7 @@
                             <span id="editImageStatus" style="font-size: 0.8rem; color: var(--text-secondary);"></span>
                         </div>
                         <div id="editImagePreviewBox" style="display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(197,160,89,0.2);">
-                            <img id="editImagePreview" src="" alt="صورة المنتج" style="width: 48px; height: 48px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2);">
+                            <img id="editImagePreview" src="" width="48" height="48" alt="صورة المنتج" style="width: 48px; height: 48px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2);">
                             <span id="editImageNotice" style="font-size: 0.78rem; color: var(--text-secondary);">الصورة الحالية المعتمدة للمستحضر</span>
                         </div>
                     </div>
@@ -523,7 +525,7 @@
                             <span id="npImageStatus" style="font-size: 0.82rem; color: var(--text-secondary);">اختياري (سيتم استخدام صورة افتراضية إن لم يتم الرفع)</span>
                         </div>
                         <div id="npImagePreviewBox" style="display: none; align-items: center; gap: 12px; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; border: 1px dashed var(--gold-light);">
-                            <img id="npImagePreview" src="" alt="معاينة الصورة" style="width: 55px; height: 55px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2);">
+                            <img id="npImagePreview" src="" width="55" height="55" alt="معاينة الصورة" style="width: 55px; height: 55px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2);">
                             <div>
                                 <span style="font-size: 0.85rem; color: #10B981; font-weight: 700; display: block;">✓ تم رفع ومعالجة الصورة بنجاح</span>
                                 <span style="font-size: 0.75rem; color: var(--text-secondary);">جاهزة للنشر الفوري في المتجر</span>
@@ -559,6 +561,6 @@
         </div>
     </div>
 
-    <script src="js/admin.js"></script>
+    <script src="js/admin.js" defer></script>
 </body>
 </html>

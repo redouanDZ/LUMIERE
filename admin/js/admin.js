@@ -333,7 +333,7 @@ async function loadProducts() {
             tbody.innerHTML = data.data.map(p => `
                 <tr>
                     <td style="display:flex; align-items:center; gap:12px;">
-                        <img src="../${p.image}" style="width:40px; height:40px; border-radius:8px; object-fit:cover; border:1px solid var(--gold-border);">
+                        <img src="../${p.image}" width="40" height="40" alt="${escapeHtml(p.title_ar)}" style="width:40px; height:40px; border-radius:8px; object-fit:cover; border:1px solid var(--gold-border);">
                         <div>
                             <div style="font-weight:700;">${p.title_ar}</div>
                             <div style="font-size:0.75rem; color:var(--text-secondary);">${p.title_en}</div>
@@ -429,7 +429,7 @@ document.getElementById('newProductForm').addEventListener('submit', async (e) =
     const price_usd = document.getElementById('npPriceUsd').value;
     const stock = document.getElementById('npStock').value;
     const desc_ar = document.getElementById('npDescAr').value;
-    const image = document.getElementById('npImageUrl').value || 'images/serum.jpg';
+    const image = document.getElementById('npImageUrl').value || 'images/serum.webp';
 
     const res = await fetch('/api/admin/products', {
         method: 'POST',
@@ -635,7 +635,7 @@ function openProductModal(id, title, price, stock, image) {
 
     const previewImg = document.getElementById('editImagePreview');
     if (previewImg) {
-        previewImg.src = image ? (image.startsWith('http') ? image : '../' + image) : '../images/serum.jpg';
+        previewImg.src = image ? (image.startsWith('http') ? image : '../' + image) : '../images/serum.webp';
     }
     const editNotice = document.getElementById('editImageNotice');
     if (editNotice) editNotice.textContent = 'الصورة الحالية المعتمدة للمستحضر';

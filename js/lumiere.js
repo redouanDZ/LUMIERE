@@ -41,7 +41,7 @@ const PRODUCTS = [
         originalPriceUsd: 65,
         rating: '4.95',
         reviews: 342,
-        image: 'images/serum.jpg',
+        image: 'images/serum.webp',
         badge: { ar: 'الأكثر مبيعاً', en: 'Best Seller' }
     },
     {
@@ -72,7 +72,7 @@ const PRODUCTS = [
         originalPriceUsd: 72,
         rating: '4.92',
         reviews: 284,
-        image: 'images/cream.jpg',
+        image: 'images/cream.webp',
         badge: { ar: 'جائزة النقاء 2026', en: 'Award Winner' }
     },
     {
@@ -103,7 +103,7 @@ const PRODUCTS = [
         originalPriceUsd: 58,
         rating: '4.89',
         reviews: 219,
-        image: 'images/eye_cream.jpg',
+        image: 'images/eye_cream.webp',
         badge: { ar: 'مفضل الخبراء', en: 'Dermatologist Pick' }
     },
     {
@@ -134,7 +134,7 @@ const PRODUCTS = [
         originalPriceUsd: 45,
         rating: '4.88',
         reviews: 194,
-        image: 'images/cleanser.jpg',
+        image: 'images/cleanser.webp',
         badge: { ar: 'طبيعي 100%', en: '100% Organic' }
     },
     {
@@ -165,7 +165,7 @@ const PRODUCTS = [
         originalPriceUsd: 46,
         rating: '4.91',
         reviews: 168,
-        image: 'images/toner.jpg',
+        image: 'images/toner.webp',
         badge: { ar: 'جديد ومميز', en: 'New Arrival' }
     },
     {
@@ -196,7 +196,7 @@ const PRODUCTS = [
         originalPriceUsd: 52,
         rating: '4.94',
         reviews: 227,
-        image: 'images/mask.jpg',
+        image: 'images/mask.webp',
         badge: { ar: 'أعلى تقييم', en: 'Top Rated' }
     }
 ];
@@ -464,7 +464,7 @@ async function loadDynamicProducts() {
                     rating: newP.rating || '5.0',
                     reviews: newP.reviews_count || 0,
                     stock: newP.stock || 50,
-                    image: newP.image || 'images/serum.jpg',
+                    image: newP.image || 'images/serum.webp',
                     badge: { ar: newP.badge_ar || 'جديد', en: newP.badge_en || 'New' }
                 });
             });
@@ -497,7 +497,7 @@ function renderProducts() {
         <article class="product-card">
             <span class="badge-pill">${p.badge[currentLang]}</span>
             <div class="product-image-box" onclick="openQuickView('${p.id}')">
-                <img src="${p.image}" alt="${p.title[currentLang]}" loading="lazy">
+                <img src="${p.image}" width="362" height="362" alt="${p.title[currentLang]}" loading="lazy">
             </div>
             <span class="product-category">${p.category[currentLang]}</span>
             <h3 class="product-title" onclick="openQuickView('${p.id}')">${p.title[currentLang]}</h3>
@@ -634,7 +634,7 @@ function renderCart() {
 
     itemsContainer.innerHTML = cart.map((item, idx) => `
         <div class="cart-item">
-            <img src="${item.image}" alt="${item.title[currentLang]}">
+            <img src="${item.image}" width="72" height="72" alt="${item.title[currentLang]}">
             <div class="cart-item-info" style="flex-grow: 1;">
                 <h4>${item.title[currentLang]}</h4>
                 <div class="cart-item-price">${formatPrice(item.basePriceUsd)} × ${item.qty}</div>
