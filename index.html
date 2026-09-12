@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="manifest.json">
-    
+    <link rel="preload" as="image" href="images/hero.webp" fetchpriority="high">
 </head>
 <body>
 
@@ -82,6 +82,7 @@
         </div>
     </header>
 
+    <main id="main-content">
     <!-- Hero Section -->
     <section class="lumiere-hero">
         <div class="hero-grid">
@@ -100,7 +101,7 @@
                 </div>
             </div>
             <div class="hero-image-wrap">
-                <img src="images/hero.webp" width="1376" height="768" alt="Lumiere Luxury Skincare Collection">
+                <img src="images/hero.webp" width="1376" height="768" alt="Lumiere Luxury Skincare Collection" fetchpriority="high">
             </div>
         </div>
     </section>
@@ -111,28 +112,28 @@
             <div class="trust-card">
                 <div class="trust-icon">🌿</div>
                 <div class="trust-text">
-                    <h4 data-i18n="trust1Title">عضوي ونباتي 100%</h4>
+                    <h3 data-i18n="trust1Title">عضوي ونباتي 100%</h3>
                     <p data-i18n="trust1Desc">مكونات نقية معتمدة دولياً</p>
                 </div>
             </div>
             <div class="trust-card">
                 <div class="trust-icon">✈️</div>
                 <div class="trust-text">
-                    <h4 data-i18n="trust2Title">شحن خليجي سريع</h4>
+                    <h3 data-i18n="trust2Title">شحن خليجي سريع</h3>
                     <p data-i18n="trust2Desc">توصيل لباب المنزل خلال 48 ساعة</p>
                 </div>
             </div>
             <div class="trust-card">
                 <div class="trust-icon">🛡️</div>
                 <div class="trust-text">
-                    <h4 data-i18n="trust3Title">دفع آمن أو عند الاستلام</h4>
+                    <h3 data-i18n="trust3Title">دفع آمن أو عند الاستلام</h3>
                     <p data-i18n="trust3Desc">Apple Pay، مدى، فيزا، و COD</p>
                 </div>
             </div>
             <div class="trust-card">
                 <div class="trust-icon">✨</div>
                 <div class="trust-text">
-                    <h4 data-i18n="trust4Title">مضمون طبياً وجلدياً</h4>
+                    <h3 data-i18n="trust4Title">مضمون طبياً وجلدياً</h3>
                     <p data-i18n="trust4Desc">مختبر سريرياً ومناسب للبشرة الحساسة</p>
                 </div>
             </div>
@@ -189,22 +190,22 @@
         <div class="ritual-grid">
             <div class="ritual-step">
                 <div class="step-num">1</div>
-                <h4 data-i18n="step1Title">1. التنظيف العميق</h4>
+                <h3 data-i18n="step1Title">1. التنظيف العميق</h3>
                 <p data-i18n="step1Desc">غسول نباتي ينقي المسام بلطف دون تجريد الزيوت الطبيعية.</p>
             </div>
             <div class="ritual-step">
                 <div class="step-num">2</div>
-                <h4 data-i18n="step2Title">2. شد المسام والانتعاش</h4>
+                <h3 data-i18n="step2Title">2. شد المسام والانتعاش</h3>
                 <p data-i18n="step2Desc">تونر الورد والنياسيناميد يوازن الإفرازات ويهيئ البشرة.</p>
             </div>
             <div class="ritual-step">
                 <div class="step-num">3</div>
-                <h4 data-i18n="step3Title">3. التغذية والإشراقة</h4>
+                <h3 data-i18n="step3Title">3. التغذية والإشراقة</h3>
                 <p data-i18n="step3Desc">سيروم فيتامين C الثابت لتفتيح وتوحيد لون البشرة.</p>
             </div>
             <div class="ritual-step">
                 <div class="step-num">4</div>
-                <h4 data-i18n="step4Title">4. الترميم والحماية</h4>
+                <h3 data-i18n="step4Title">4. الترميم والحماية</h3>
                 <p data-i18n="step4Desc">كريم الببتيدات الليلي لشد البشرة ومحاربة علامات التقدم.</p>
             </div>
         </div>
@@ -217,7 +218,7 @@
                 <img src="images/hero.webp" width="1376" height="768" alt="The Complete Glow Ritual Set" style="width: 100%; height: 100%; object-fit: cover; display: block;">
             </div>
             <div class="bundle-content">
-                <span class="hero-tag" style="background: rgba(197, 160, 89, 0.2); color: #E7C885;" data-i18n="bundleTag">عرض التوفير الأكبر</span>
+                <span class="hero-tag" style="background: rgba(197, 160, 89, 0.2); color: var(--text-gold-dark);" data-i18n="bundleTag">عرض التوفير الأكبر</span>
                 <h2 class="serif-font" data-i18n="bundleTitle">مجموعة طقوس الإشراقة الكاملة (The Glow Ritual Set)</h2>
                 <p data-i18n="bundleDesc">احصلي على الثلاثي الذهبي الأكثر طلباً: الغسول + سيروم النضارة + كريم الببتيدات بخصم استثنائي 30% مع شحن مجاني وحقيبة هدايا فاخرة.</p>
                 
@@ -451,6 +452,8 @@
         </div>
     </div>
 
+    </main>
+
     <!-- Luxury Footer -->
     <footer class="lumiere-footer">
         <div class="footer-grid">
@@ -459,7 +462,7 @@
                 <p>مستحضرات عناية فاخرة تعتمد على خلاصات نباتية نقية ومكونات سريرية معتمدة لإشراقة بشرتك الخالدة.</p>
             </div>
             <div class="footer-col">
-                <h4>المجموعة</h4>
+                <h3>المجموعة</h3>
                 <ul>
                     <li><a href="#products">السيرومات المركزة</a></li>
                     <li><a href="#products">كريمات الترميم والعيون</a></li>
@@ -468,7 +471,7 @@
                 </ul>
             </div>
             <div class="footer-col">
-                <h4>خدمة العملاء</h4>
+                <h3>خدمة العملاء</h3>
                 <ul>
                     <li><a href="#bundle">الشحن والتوصيل السريع</a></li>
                     <li><a href="#bundle">الضمان الذهبي 30 يوماً</a></li>
@@ -477,7 +480,7 @@
                 </ul>
             </div>
             <div class="footer-col">
-                <h4>تواصل معنا</h4>
+                <h3>تواصل معنا</h3>
                 <ul>
                     <li><a href="https://wa.me/966500000000" id="footerWhatsappLink" target="_blank">خدمة كونسيرج WhatsApp</a></li>
                     <li><a href="mailto:contact@lumiere-botanics.com">contact@lumiere-botanics.com</a></li>
