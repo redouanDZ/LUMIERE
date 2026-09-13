@@ -274,7 +274,7 @@ function renderOrders(orders) {
                 <td style="font-size:0.82rem; color:var(--text-secondary); max-width: 220px;">${itemsList}</td>
                 <td style="font-weight:700; color:var(--gold-light);">${o.total_local} ${o.currency}</td>
                 <td>
-                    <select class="status-select" onchange="updateOrderStatus(${o.id}, this.value)">
+                    <select class="status-select" data-lumiere-change="updateOrderStatus(${o.id}, this.value)">
                         <option value="pending" ${o.status === 'pending' ? 'selected' : ''}>قيد التجهيز</option>
                         <option value="processing" ${o.status === 'processing' ? 'selected' : ''}>جاري التحضير</option>
                         <option value="shipped" ${o.status === 'shipped' ? 'selected' : ''}>تم الشحن ✈️</option>
@@ -288,7 +288,7 @@ function renderOrders(orders) {
                     </a>
                 </td>
                 <td>
-                    <button onclick="deleteOrder(${o.id})" class="btn-delete" title="حذف الطلب">🗑️</button>
+                    <button data-lumiere-click="deleteOrder(${o.id})" class="btn-delete" title="حذف الطلب">🗑️</button>
                 </td>
             </tr>
         `;
@@ -345,8 +345,8 @@ async function loadProducts() {
                     <td><span class="badge" style="background:rgba(16,185,129,0.15); color:#34D399;">${p.stock} قطعة</span></td>
                     <td>⭐ ${p.rating} (${p.reviews_count})</td>
                     <td style="display:flex; gap:8px;">
-                        <button onclick="handleEditProductClick(this)" data-id="${p.id}" data-title="${encodeURIComponent(p.title_ar)}" data-price="${p.price_usd}" data-stock="${p.stock}" data-image="${encodeURIComponent(p.image || '')}" class="btn-outline-gold" style="padding:4px 10px; font-size:0.8rem;">تعديل</button>
-                        <button onclick="deleteProduct('${p.id}')" class="btn-delete" title="حذف المستحضر">🗑️</button>
+                        <button data-lumiere-click="handleEditProductClick(this)" data-id="${p.id}" data-title="${encodeURIComponent(p.title_ar)}" data-price="${p.price_usd}" data-stock="${p.stock}" data-image="${encodeURIComponent(p.image || '')}" class="btn-outline-gold" style="padding:4px 10px; font-size:0.8rem;">تعديل</button>
+                        <button data-lumiere-click="deleteProduct('${p.id}')" class="btn-delete" title="حذف المستحضر">🗑️</button>
                     </td>
                 </tr>
             `).join('');
@@ -473,12 +473,12 @@ async function loadCoupons() {
                         </span>
                     </td>
                     <td>
-                        <button onclick="toggleCoupon(${c.id})" class="${c.is_active ? 'btn-toggle-inactive' : 'btn-toggle-active'}">
+                        <button data-lumiere-click="toggleCoupon(${c.id})" class="${c.is_active ? 'btn-toggle-inactive' : 'btn-toggle-active'}">
                             ${c.is_active ? 'تعطيل ⏸️' : 'تفعيل ▶️'}
                         </button>
                     </td>
                     <td>
-                        <button onclick="handleDeleteCouponClick(this)" data-id="${c.id}" data-code="${encodeURIComponent(c.code)}" class="btn-delete" title="حذف الكوبون نهائياً">
+                        <button data-lumiere-click="handleDeleteCouponClick(this)" data-id="${c.id}" data-code="${encodeURIComponent(c.code)}" class="btn-delete" title="حذف الكوبون نهائياً">
                             حذف 🗑️
                         </button>
                     </td>
@@ -870,3 +870,78 @@ document.getElementById('changePasswordForm')?.addEventListener('submit', async 
 });
 
 initDashboard();
+
+
+
+/* LUMIÈRE safe event bridge: replaces inline event attributes with delegated,
+   allow-listed handlers so CSP can disable script-src-attr inline execution. */
+(() => {
+    const allowed = new Set([
+        'addToCart','applyCoupon','changeQty','closeCartDrawer','closeChangePasswordModal',
+        'closeCheckoutModal','closeCustomerModal','closeNewCouponModal','closeNewProductModal',
+        'closeProductModal','closeQuickView','deleteOrder','deleteProduct','exportOrdersCSV',
+        'filterCategory','handleCustomerForgotPassword','handleCustomerLogin','handleCustomerRegister',
+        'handleCustomerResetPassword','handleDeleteCouponClick','handleEditProductClick','logoutAdmin',
+        'logoutCustomer','openCartDrawer','openChangePasswordModal','openNewCouponModal',
+        'openNewProductModal','openQuickBuy','openCustomerAuthModal','openQuickView','quickBuy',
+        'quickBuyBundle','removeFromCart','switchAuthMode','switchTab','toggleAdminSidebar',
+        'toggleCoupon','toggleFaq','toggleMobileNav','updateOrderStatus'
+    ]);
+
+    const parseArgs = (raw, element, event) => {
+        const args = [];
+        const re = /'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|\\b(?:this|event)\\b|-?\\d+(?:\\.\\d+)?/g;
+        let match;
+        while ((match = re.exec(raw || ''))) {
+            const token = match[0];
+            if (token === 'this') args.push(element);
+            else if (token === 'this.value') args.push(element.value);
+            else if (token === 'this.checked') args.push(element.checked);
+            else if (token === 'event') args.push(event);
+            else if ((token[0] === "'" && token[token.length - 1] === "'") ||
+                     (token[0] === '"' && token[token.length - 1] === '"')) {
+                args.push(token.slice(1, -1).replace(/\\(['"])/g, '$1'));
+            } else {
+                args.push(Number(token));
+            }
+        }
+        return args;
+    };
+
+    const execute = (expression, element, event) => {
+        if (!expression) return undefined;
+        let lastResult;
+        for (const statement of expression.split(';').map(x => x.trim()).filter(Boolean)) {
+            if (statement === 'event.stopPropagation()') {
+                event.stopPropagation();
+                continue;
+            }
+            const match = statement.replace(/^return\s+/, '').match(/^([A-Za-z_$][\w$]*)\s*\((.*)\)$/s);
+            if (!match || !allowed.has(match[1])) continue;
+            const fn = window[match[1]];
+            if (typeof fn !== 'function') continue;
+            lastResult = fn(...parseArgs(match[2], element, event));
+        }
+        return lastResult;
+    };
+
+    document.addEventListener('click', event => {
+        const target = event.target.closest?.('[data-lumiere-click]');
+        if (!target) return;
+        if (target.tagName === 'A' && target.getAttribute('href') === '#') event.preventDefault();
+        execute(target.getAttribute('data-lumiere-click'), target, event);
+    }, false);
+
+    document.addEventListener('submit', event => {
+        const form = event.target.closest?.('[data-lumiere-submit]');
+        if (!form) return;
+        event.preventDefault();
+        execute(form.getAttribute('data-lumiere-submit'), form, event);
+    }, false);
+
+    document.addEventListener('change', event => {
+        const target = event.target.closest?.('[data-lumiere-change]');
+        if (!target) return;
+        execute(target.getAttribute('data-lumiere-change'), target, event);
+    }, false);
+})();

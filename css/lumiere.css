@@ -1728,3 +1728,415 @@ textarea {
         align-items: stretch;
     }
 }
+
+/* ==========================================
+   LUMIÈRE 1.0.2 — PREMIUM RESPONSIVE POLISH
+   ========================================== */
+
+:root {
+    --mobile-nav-height: calc(66px + env(safe-area-inset-bottom, 0px));
+}
+
+html {
+    scroll-padding-top: 88px;
+}
+
+body {
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+}
+
+button,
+a,
+select,
+input,
+textarea {
+    touch-action: manipulation;
+}
+
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+    outline: 3px solid rgba(197, 160, 89, 0.45);
+    outline-offset: 2px;
+}
+
+.modal-close-btn,
+.close-drawer-btn,
+.mobile-menu-btn,
+.sidebar-close-btn {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.form-input,
+.form-select,
+.form-control,
+.status-select {
+    min-height: 46px;
+}
+
+.btn-luxury,
+.btn-outline,
+.btn-checkout,
+.btn-gold,
+.btn-outline-gold,
+.btn-apply-coupon {
+    min-height: 44px;
+}
+
+/* Keep the desktop header compact before switching to the mobile navigation. */
+@media (max-width: 1100px) and (min-width: 769px) {
+    .header-container {
+        padding-inline: 18px;
+        gap: 12px;
+    }
+
+    .header-controls {
+        flex-wrap: nowrap;
+    }
+
+    .logo-text {
+        font-size: 1.75rem;
+    }
+
+    .nav-links {
+        gap: 10px;
+    }
+}
+
+@media (max-width: 768px) {
+    html {
+        scroll-padding-top: 72px;
+    }
+
+    body {
+        padding-bottom: var(--mobile-nav-height);
+    }
+
+    .lumiere-header {
+        background: rgba(250, 247, 242, 0.97);
+    }
+
+    .header-container {
+        min-height: 58px;
+        padding: 8px 12px;
+        gap: 8px;
+    }
+
+    .header-container > div:first-child {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .header-controls {
+        width: auto;
+        max-width: 52vw;
+        flex: 0 0 auto;
+        overflow-x: auto;
+        justify-content: flex-end;
+        scrollbar-width: none;
+    }
+
+    .header-controls::-webkit-scrollbar {
+        display: none;
+    }
+
+    .header-controls .select-pill {
+        min-height: 40px;
+    }
+
+    .cart-btn {
+        flex: 0 0 42px;
+        width: 42px;
+        height: 42px;
+    }
+
+    .mobile-menu-btn {
+        min-width: 42px;
+        min-height: 42px;
+        padding: 8px;
+    }
+
+    .logo-wrap {
+        min-width: 0;
+    }
+
+    .logo-text {
+        white-space: nowrap;
+    }
+
+    .lumiere-hero {
+        min-height: auto;
+    }
+
+    .hero-image-wrap img {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+    }
+
+    .trust-card,
+    .ritual-step,
+    .review-card,
+    .product-card {
+        min-width: 0;
+    }
+
+    .product-card {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .product-card .product-actions {
+        margin-top: auto;
+    }
+
+    .filter-pills {
+        margin-inline: -4px;
+        padding-inline: 4px;
+    }
+
+    .filter-btn {
+        min-height: 44px;
+        padding-inline: 15px;
+    }
+
+    .cart-drawer {
+        width: min(420px, 100vw);
+        max-width: 100vw;
+    }
+
+    .drawer-header {
+        min-height: 68px;
+        padding: 12px 16px;
+    }
+
+    .drawer-body {
+        padding: 16px;
+    }
+
+    .drawer-footer {
+        padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .cart-item {
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .cart-item img {
+        width: 72px;
+        height: 72px;
+        flex: 0 0 72px;
+    }
+
+    .modal-overlay {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    .checkout-modal,
+    .quickview-modal,
+    .modal-box {
+        width: 100%;
+        max-width: 100%;
+        max-height: min(92vh, 760px);
+        border-radius: 22px 22px 0 0;
+        padding: 24px 18px calc(20px + env(safe-area-inset-bottom, 0px));
+        overscroll-behavior: contain;
+    }
+
+    .modal-close-btn {
+        top: 10px;
+        inset-inline-end: 10px;
+    }
+
+    .checkout-modal {
+        padding-top: 34px;
+    }
+
+    #lumiereCheckoutForm > button[type="submit"] {
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+        margin-top: 14px !important;
+        box-shadow: 0 -10px 20px rgba(255,255,255,0.92);
+    }
+
+    .payment-badges {
+        flex-wrap: wrap;
+    }
+
+    .payment-badge {
+        min-height: 32px;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .mobile-drawer {
+        width: min(340px, 88vw);
+        max-width: 88vw;
+        padding: 20px 18px calc(24px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .mobile-drawer a,
+    .mobile-drawer button {
+        min-height: 44px;
+    }
+
+    .mobile-bottom-nav {
+        height: var(--mobile-nav-height);
+        padding-inline: max(6px, env(safe-area-inset-left, 0px)) max(6px, env(safe-area-inset-right, 0px));
+    }
+
+    .bottom-nav-item {
+        min-height: 58px;
+        justify-content: center;
+        padding: 5px 2px;
+    }
+
+    .bottom-nav-label {
+        line-height: 1.1;
+        white-space: nowrap;
+    }
+
+    .social-proof-toast {
+        bottom: calc(var(--mobile-nav-height) + 12px);
+        inset-inline-start: 12px;
+        inset-inline-end: 12px;
+        max-width: calc(100vw - 24px);
+    }
+}
+
+@media (max-width: 520px) {
+    .header-container {
+        padding-inline: 10px;
+    }
+
+    .header-controls {
+        max-width: 48vw;
+        gap: 4px;
+    }
+
+    #currencySelector {
+        max-width: 78px;
+    }
+
+    #langSelector {
+        max-width: 64px;
+    }
+
+    .hero-title {
+        font-size: clamp(1.9rem, 8.5vw, 2.35rem);
+        line-height: 1.2;
+    }
+
+    .section-title {
+        font-size: clamp(1.55rem, 7vw, 1.9rem);
+        line-height: 1.25;
+    }
+
+    .hero-actions {
+        gap: 10px;
+    }
+
+    .hero-actions .btn-luxury,
+    .hero-actions .btn-outline {
+        min-height: 48px;
+    }
+
+    .products-grid {
+        width: 100%;
+        max-width: 380px;
+    }
+
+    .product-image-wrap {
+        height: clamp(210px, 62vw, 250px);
+    }
+
+    .bundle-content h2 {
+        font-size: clamp(1.7rem, 8vw, 2rem);
+        line-height: 1.25;
+    }
+
+    .checkout-modal,
+    .quickview-modal,
+    .modal-box {
+        padding-inline: 15px;
+    }
+
+    .form-input,
+    .form-select {
+        font-size: 16px;
+    }
+
+    .coupon-row {
+        flex-direction: column;
+    }
+
+    .coupon-row .btn-apply-coupon {
+        width: 100%;
+    }
+
+    .cart-total-row {
+        font-size: 1.05rem;
+    }
+
+    .mobile-bottom-nav {
+        padding-inline: 2px;
+    }
+
+    .bottom-nav-icon {
+        font-size: 1.12rem;
+    }
+
+    .bottom-nav-item {
+        font-size: 0.68rem;
+    }
+}
+
+@media (max-width: 380px) {
+    .header-controls {
+        max-width: 44vw;
+    }
+
+    #currencySelector {
+        max-width: 70px;
+    }
+
+    #langSelector {
+        max-width: 58px;
+    }
+
+    .mobile-bottom-nav .bottom-nav-item:nth-child(2) .bottom-nav-icon {
+        display: none;
+    }
+
+    .mobile-bottom-nav .bottom-nav-item:nth-child(5) .bottom-nav-icon {
+        font-size: 1rem;
+    }
+
+    .product-actions {
+        gap: 6px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+

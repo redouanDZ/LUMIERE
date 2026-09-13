@@ -69,9 +69,12 @@ const validateOrderInput = (req, res, next) => {
         if (!item || typeof item !== 'object' || typeof item.id !== 'string') {
             return res.status(400).json({ success: false, message: 'بيانات المنتج في السلة غير صالحة' });
         }
-        const cleanId = sanitizeString(item.id);
-        const qty = parseInt(item.qty, 10);
-        if (isNaN(qty) || qty < 1 || qty > 20) {
+        const cleanId = String(item.id).trim();
+        if (!/^[A-Za-z0-9_-]{1,64}$/.test(cleanId)) {
+            return res.status(400).json({ success: false, message: 'معرّف المنتج غير صالح' });
+        }
+        const qty = Number(item.qty);
+        if (!Number.isInteger(qty) || qty < 1 || qty > 20) {
             return res.status(400).json({ success: false, message: 'كمية المنتج يجب أن تتراوح بين 1 و 20 قطعة' });
         }
         itemQuantities.set(cleanId, (itemQuantities.get(cleanId) || 0) + qty);

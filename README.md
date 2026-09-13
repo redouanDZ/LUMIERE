@@ -1,6 +1,6 @@
 # LUMIÈRE Botanics — High-End Clean Skincare & Beauty E-Commerce Platform 🌸💎
 
-Production-ready, ultra-luxury Clean Skincare & Beauty e-commerce full-stack platform. Built for global and Gulf markets with multi-currency support (SAR, AED, USD, EUR, KWD, DZD), bilingual experience (Arabic RTL / English LTR), 1-click checkout, express delivery, customer accounts, and an administrative operations hub.
+Production-focused, ultra-luxury Clean Skincare & Beauty e-commerce full-stack platform. Built for global and Gulf markets with multi-currency support (SAR, AED, USD, EUR, KWD, DZD), bilingual experience (Arabic RTL / English LTR), 1-click checkout, express delivery, customer accounts, and an administrative operations hub.
 
 ---
 
@@ -9,19 +9,19 @@ Production-ready, ultra-luxury Clean Skincare & Beauty e-commerce full-stack pla
 ### 🌟 Customer Experience & Storefront
 - **Parisian Clean Luxury Design:** Minimalist aesthetics, warm beige palette, polished gold accents, and fluid animations.
 - **Mobile-First & PWA:** Optimized for iOS & Android with a floating bottom navigation bar, slide-out drawer, and home-screen installability.
-- **Multi-Currency Engine:** Live automatic conversion across SAR, AED, USD, EUR, KWD, and DZD.
+- **Multi-Currency Engine:** Configurable multi-currency conversion with centrally defined rates across SAR, AED, USD, EUR, KWD, and DZD.
 - **Instant Bilingual Switcher:** Arabic (RTL) and English (LTR) with seamless typography.
 - **Customer Portal & Privilege Club:** Registration, login, order tracking history, and 100 welcome reward points.
 - **Interactive Quick View Modal:** Clinical benefits, daily ritual protocol, and ingredient transparency tabs.
 - **Slide-out Cart Drawer:** Dynamic quantity adjustments, 10% coupon engine (`GLOW10`), and subtotal calculation.
-- **Gulf & International Express Checkout:** Address autocomplete for KSA, UAE, Kuwait, Qatar, Bahrain, Oman, and global destinations.
+- **Gulf & International Express Checkout:** International address fields with configurable country/city/address data.
 
 ### 🛡️ Backend & Operations Hub
 - **Node.js & Express Architecture:** Clean RESTful API with structured routes and controllers.
 - **Embedded Database:** Zero-config SQLite3 with automated schema creation and initial seeding.
-- **Input Sanitization & Protection:** Parameterized queries (SQL Injection immunity), HTML tag stripping (XSS prevention).
+- **Input Sanitization & Protection:** Parameterized queries (SQL injection risk reduction), HTML tag stripping (XSS prevention).
 - **Hardened Authentication:** Bcrypt password hashing and JWT delivered via secure httpOnly cookies.
-- **Rate Limiting & DDoS Shield:** Anti-brute-force and spam order protection.
+- **Rate Limiting & Application Abuse Protection:** Anti-brute-force and spam order protection.
 - **Admin Operations Hub (`/admin`):** Real-time analytics, revenue calculation, order status dispatching, customer CRM, product management, and coupon CRUD.
 
 ---
@@ -80,7 +80,7 @@ Alternatively, you can configure your environment manually:
 
 > ⚠️ **CRITICAL SECURITY NOTE:**
 > - Never commit the `.env` file to version control. It is strictly excluded by `.gitignore`.
-> - The database seeds the administrator account upon the very first server launch (`npm start`). If you change credentials later, update them directly through the Admin Hub or via database migration.
+> - The database seeds the administrator account during first initialization when ADMIN_EMAIL/ADMIN_PASSWORD are configured. If you change credentials later, update them directly through the Admin Hub or via database migration.
 
 ### 5. Payment Gateway Setup (Client-Provided Credentials)
 
@@ -160,3 +160,16 @@ The platform will be accessible at `http://localhost:4000`.
 
 ---
 © 2026 LUMIÈRE Botanics Paris. All rights reserved.
+
+
+## Production Hardening Notes
+
+- Never ship `.env`, SQLite database files, WAL/SHM files, or customer/order data.
+- `JWT_SECRET` must be a unique random secret of at least 32 characters in production.
+- `PUBLIC_URL` is required for card-payment checkout and sensitive reset links in production.
+- Automated tests force `NODE_ENV=test` and use an isolated in-memory database.
+- Product stock is reserved atomically during order creation.
+- Card-payment failures release reserved inventory and coupon reservations.
+- Paid card orders cannot be marked shipped/delivered without verified payment.
+- Product deletion is implemented as archiving (`is_active=0`) to preserve historical order integrity.
+- Express rate limiting is application-level abuse protection; use a WAF/CDN for DDoS mitigation.

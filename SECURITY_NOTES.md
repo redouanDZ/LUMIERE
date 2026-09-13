@@ -1,40 +1,39 @@
-# Security Architecture Notes & Technical Debt
+# LUMIÈRE Security Notes — V1.0.1
 
-## 1. Content Security Policy (CSP) & `unsafe-inline` Tradeoff
+## Completed hardening
 
-### Architectural Decision
-In `server.js`, the Content Security Policy configured via `helmet` currently includes `'unsafe-inline'` in `scriptSrc` and `styleSrc`:
+- Removed shipped `.env` and local SQLite/customer data from the distributable project.
+- Production startup rejects missing/weak JWT secrets.
+- Tests use an isolated in-memory SQLite database through `scripts/run-tests.js`.
+- Canonical database configuration is `DATABASE_FILE`; `DB_PATH` is reserved for test/runtime overrides.
+- Admin sessions use a database-backed `session_version`, so password changes/reset invalidate existing admin JWTs.
+- Customer sessions carry a `sessionVersion`; profile/order authentication checks it.
+- Order creation atomically reserves stock and calculates all prices from server-side product data.
+- Coupon reservations prevent concurrent checkout attempts from exceeding `max_uses`.
+- Failed card-invoice initialization releases stock and coupon reservations.
+- Moyasar invoice callbacks are configured as server notifications; browser redirection uses `success_url`.
+- Verified Moyasar webhooks re-fetch the invoice and verify order amount/currency before marking an order paid.
+- Failed/expired/voided card payments release reserved stock exactly once.
+- Product deletion is an archive operation (`is_active=0`) to preserve historical order integrity.
+- Admin cannot ship/deliver unpaid card orders or cancel paid orders without a refund workflow.
+- Uploads use an admin-only limiter, a 6 MB cap, and JPEG/PNG/WebP magic-byte validation.
+- Uploaded images are stored under `/app/data/uploads`, which is the persistent Render/Docker data volume.
+- Public single-product API returns only active products.
+- Product IDs, prices, and stock have strict server-side validation.
+- CSRF defense includes Origin validation for browser state-changing requests plus strict same-site auth cookies.
+- Inline HTML event attributes were migrated to delegated, allow-listed event handlers; `script-src` no longer permits `'unsafe-inline'`.
+- Chart.js is pinned to a specific version and protected with SRI.
+- Password-reset tokens are never logged in production and reset creation is refused when production SMTP is unavailable.
 
-```javascript
-app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-            fontSrc: ["'self'", "https://fonts.gstatic.com"],
-            imgSrc: ["'self'", "data:"],
-            connectSrc: ["'self'"]
-        }
-    }
-}));
-```
+## Remaining operational requirements
 
-### Justification & Root Cause
-- Both `index.html` and `admin/index.html` currently utilize 56+ inline event attributes (`onclick`, `onsubmit`, `onchange`) for interactive UI controls (e.g., cart operations, category filtering, quick view tabs, modal toggling).
-- In the W3C CSP specification, the `nonce="..."` mechanism only applies to `<script nonce="...">` elements and does **not** permit inline HTML event attributes.
-- Eliminating `'unsafe-inline'` immediately without refactoring would break core storefront navigation and administrative workflows.
-- As the primary line of defense, input sanitization and output escaping are enforced across all input vectors via `sanitizeString()` and `escapeHtml()` in `src/middleware/validator.js` and parameterized SQLite queries.
+1. Configure `PUBLIC_URL`, `ALLOWED_ORIGINS`, SMTP, and Moyasar secrets in the hosting provider.
+2. Configure a Moyasar webhook endpoint at `/api/webhooks/moyasar` with the same shared secret and the required payment events.
+3. Use a WAF/CDN for DDoS mitigation; Express rate limiting is application-level abuse protection.
+4. Back up the persistent SQLite volume and test restoration before accepting real orders.
+5. Run `npm ci` followed by `npm test` in CI/CD before each production deployment.
+6. For high-volume or multi-instance deployments, migrate the transactional order/inventory layer to PostgreSQL.
 
-### Residual Risk
-- If a stored Cross-Site Scripting (XSS) payload bypasses server sanitization, the browser will execute it because `'unsafe-inline'` does not prevent inline script execution.
-- The CSP still provides defense-in-depth against external unauthorized script injection by restricting `scriptSrc` domains to `'self'` and `https://cdn.jsdelivr.net`.
+## Important architecture note
 
-### Complete Remediation Roadmap (Strict CSP / Zero-Inline)
-When refactoring to a 100% Strict CSP:
-1. **Event Listener Migration:** Remove all 56+ inline `onclick`/`onsubmit` attributes from `index.html` and `admin/index.html`. Migrate them to `addEventListener` bindings inside `js/lumiere.js` and `admin/js/admin.js` utilizing `id` or `data-*` attributes.
-2. **Dynamic Nonce Injection:** Replace static file delivery with an Express middleware that generates a cryptographically secure random nonce per request (`crypto.randomBytes(16).toString('base64')`), injecting it into both the CSP HTTP header and inline script blocks.
-
-### Risk & Priority Assessment
-- **Current Priority:** Low (Single-tenant dedicated e-commerce deployment with strict parameterized SQL queries and input sanitization).
-- **Target Priority:** High (Must be executed prior to any multi-tenant SaaS expansion, white-label client hosting, or third-party plugin integration).
+SQLite is suitable for a single persistent application instance at modest traffic. It is not a good foundation for horizontal multi-instance scaling. The order reservation code is transactional for the current single-instance SQLite architecture, but production scale-out should use a server database with row-level locking/transactions.

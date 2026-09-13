@@ -496,11 +496,11 @@ function renderProducts() {
     container.innerHTML = filtered.map(p => `
         <article class="product-card">
             <span class="badge-pill">${p.badge[currentLang]}</span>
-            <div class="product-image-box" onclick="openQuickView('${p.id}')">
+            <div class="product-image-box" data-lumiere-click="openQuickView('${p.id}')">
                 <img src="${p.image}" width="362" height="362" alt="${p.title[currentLang]}" loading="lazy">
             </div>
             <span class="product-category">${p.category[currentLang]}</span>
-            <h3 class="product-title" onclick="openQuickView('${p.id}')">${p.title[currentLang]}</h3>
+            <h3 class="product-title" data-lumiere-click="openQuickView('${p.id}')">${p.title[currentLang]}</h3>
             <div class="product-rating">
                 ★★★★★ <span>${p.rating}</span>
                 <span class="review-count">(${p.reviews})</span>
@@ -513,10 +513,10 @@ function renderProducts() {
                 </div>
             </div>
             <div class="product-actions">
-                <button class="btn-add-cart" onclick="addToCart('${p.id}')">
+                <button class="btn-add-cart" data-lumiere-click="addToCart('${p.id}')">
                     ${TRANSLATIONS[currentLang].btnAddCart}
                 </button>
-                <button class="btn-buy-fast" onclick="quickBuy('${p.id}')">
+                <button class="btn-buy-fast" data-lumiere-click="quickBuy('${p.id}')">
                     ${TRANSLATIONS[currentLang].btnFastBuy}
                 </button>
             </div>
@@ -640,10 +640,10 @@ function renderCart() {
                 <div class="cart-item-price">${formatPrice(item.basePriceUsd)} × ${item.qty}</div>
             </div>
             <div style="display: flex; gap: 8px; align-items: center;">
-                <button onclick="changeQty(${idx}, -1)" style="border: 1px solid #ddd; background: #fff; width: 26px; height: 26px; border-radius: 50%; cursor: pointer;">-</button>
+                <button data-lumiere-click="changeQty(${idx}, -1)" style="border: 1px solid #ddd; background: #fff; width: 26px; height: 26px; border-radius: 50%; cursor: pointer;">-</button>
                 <span style="font-weight: 600;">${item.qty}</span>
-                <button onclick="changeQty(${idx}, 1)" style="border: 1px solid #ddd; background: #fff; width: 26px; height: 26px; border-radius: 50%; cursor: pointer;">+</button>
-                <button onclick="removeFromCart(${idx})" style="border: none; background: transparent; color: #ef4444; font-size: 1.1rem; cursor: pointer; margin-inline-start: 6px;">✕</button>
+                <button data-lumiere-click="changeQty(${idx}, 1)" style="border: 1px solid #ddd; background: #fff; width: 26px; height: 26px; border-radius: 50%; cursor: pointer;">+</button>
+                <button data-lumiere-click="removeFromCart(${idx})" style="border: none; background: transparent; color: #ef4444; font-size: 1.1rem; cursor: pointer; margin-inline-start: 6px;">✕</button>
             </div>
         </div>
     `).join('');
@@ -1328,3 +1328,78 @@ function toggleMobileNav() {
 
 // Provide updateCartUI alias for backward compatibility
 window.updateCartUI = renderCart;
+
+
+
+/* LUMIÈRE safe event bridge: replaces inline event attributes with delegated,
+   allow-listed handlers so CSP can disable script-src-attr inline execution. */
+(() => {
+    const allowed = new Set([
+        'addToCart','applyCoupon','changeQty','closeCartDrawer','closeChangePasswordModal',
+        'closeCheckoutModal','closeCustomerModal','closeNewCouponModal','closeNewProductModal',
+        'closeProductModal','closeQuickView','deleteOrder','deleteProduct','exportOrdersCSV',
+        'filterCategory','handleCustomerForgotPassword','handleCustomerLogin','handleCustomerRegister',
+        'handleCustomerResetPassword','handleDeleteCouponClick','handleEditProductClick','logoutAdmin',
+        'logoutCustomer','openCartDrawer','openChangePasswordModal','openNewCouponModal',
+        'openNewProductModal','openQuickBuy','openCustomerAuthModal','openQuickView','quickBuy',
+        'quickBuyBundle','removeFromCart','switchAuthMode','switchTab','toggleAdminSidebar',
+        'toggleCoupon','toggleFaq','toggleMobileNav','updateOrderStatus'
+    ]);
+
+    const parseArgs = (raw, element, event) => {
+        const args = [];
+        const re = /'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|\\b(?:this|event)\\b|-?\\d+(?:\\.\\d+)?/g;
+        let match;
+        while ((match = re.exec(raw || ''))) {
+            const token = match[0];
+            if (token === 'this') args.push(element);
+            else if (token === 'this.value') args.push(element.value);
+            else if (token === 'this.checked') args.push(element.checked);
+            else if (token === 'event') args.push(event);
+            else if ((token[0] === "'" && token[token.length - 1] === "'") ||
+                     (token[0] === '"' && token[token.length - 1] === '"')) {
+                args.push(token.slice(1, -1).replace(/\\(['"])/g, '$1'));
+            } else {
+                args.push(Number(token));
+            }
+        }
+        return args;
+    };
+
+    const execute = (expression, element, event) => {
+        if (!expression) return undefined;
+        let lastResult;
+        for (const statement of expression.split(';').map(x => x.trim()).filter(Boolean)) {
+            if (statement === 'event.stopPropagation()') {
+                event.stopPropagation();
+                continue;
+            }
+            const match = statement.replace(/^return\s+/, '').match(/^([A-Za-z_$][\w$]*)\s*\((.*)\)$/s);
+            if (!match || !allowed.has(match[1])) continue;
+            const fn = window[match[1]];
+            if (typeof fn !== 'function') continue;
+            lastResult = fn(...parseArgs(match[2], element, event));
+        }
+        return lastResult;
+    };
+
+    document.addEventListener('click', event => {
+        const target = event.target.closest?.('[data-lumiere-click]');
+        if (!target) return;
+        if (target.tagName === 'A' && target.getAttribute('href') === '#') event.preventDefault();
+        execute(target.getAttribute('data-lumiere-click'), target, event);
+    }, false);
+
+    document.addEventListener('submit', event => {
+        const form = event.target.closest?.('[data-lumiere-submit]');
+        if (!form) return;
+        event.preventDefault();
+        execute(form.getAttribute('data-lumiere-submit'), form, event);
+    }, false);
+
+    document.addEventListener('change', event => {
+        const target = event.target.closest?.('[data-lumiere-change]');
+        if (!target) return;
+        execute(target.getAttribute('data-lumiere-change'), target, event);
+    }, false);
+})();

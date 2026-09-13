@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>LUMIÈRE Botanics — High-End Clean Skincare & Beauty</title>
     <meta name="description" content="LUMIÈRE Paris — Ultra-pure botanical organic skincare and radiance rituals. Express delivery across the Gulf & Worldwide.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -31,7 +31,7 @@
         <div class="header-container">
             <div style="display: flex; align-items: center; gap: 10px;">
                 <!-- Mobile Menu Hamburger Button -->
-                <button id="mobileMenuToggle" onclick="toggleMobileNav()" class="mobile-menu-btn" title="القائمة">
+                <button id="mobileMenuToggle" data-lumiere-click="toggleMobileNav()" class="mobile-menu-btn" title="القائمة">
                     <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                     </svg>
@@ -44,10 +44,10 @@
     
             <nav id="mainNav">
                 <ul class="nav-links">
-                    <li><a href="#products" onclick="filterCategory('all')" class="nav-link active" data-i18n="navAll">جميع المستحضرات</a></li>
-                    <li><a href="#products" onclick="filterCategory('serums')" class="nav-link" data-i18n="navSerums">السيرومات</a></li>
-                    <li><a href="#products" onclick="filterCategory('creams')" class="nav-link" data-i18n="navCreams">الكريمات والترميم</a></li>
-                    <li><a href="#products" onclick="filterCategory('cleansers')" class="nav-link" data-i18n="navCleansers">التنظيف والأقنعة</a></li>
+                    <li><a href="#products" data-lumiere-click="filterCategory('all')" class="nav-link active" data-i18n="navAll">جميع المستحضرات</a></li>
+                    <li><a href="#products" data-lumiere-click="filterCategory('serums')" class="nav-link" data-i18n="navSerums">السيرومات</a></li>
+                    <li><a href="#products" data-lumiere-click="filterCategory('creams')" class="nav-link" data-i18n="navCreams">الكريمات والترميم</a></li>
+                    <li><a href="#products" data-lumiere-click="filterCategory('cleansers')" class="nav-link" data-i18n="navCleansers">التنظيف والأقنعة</a></li>
                     <li><a href="#bundle" class="nav-link" data-i18n="navBundle">مجموعة النضارة</a></li>
                 </ul>
             </nav>
@@ -68,11 +68,11 @@
                 </select>
 
                 <!-- Customer Account Button -->
-                <button id="customerAuthBtn" onclick="openCustomerAuthModal()" class="select-pill" style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-weight:700; padding:8px 18px; background:rgba(197,160,89,0.18); border:1px solid #C5A059; color:#1C1917; border-radius:30px; font-size:0.88rem; transition: all 0.2s;" title="حسابي">
+                <button id="customerAuthBtn" data-lumiere-click="openCustomerAuthModal()" class="select-pill" style="display:inline-flex; align-items:center; gap:8px; cursor:pointer; font-weight:700; padding:8px 18px; background:rgba(197,160,89,0.18); border:1px solid #C5A059; color:#1C1917; border-radius:30px; font-size:0.88rem; transition: all 0.2s;" title="حسابي">
                     <span id="customerAuthIcon" style="font-size:1.1rem;">👤</span>
                     <span id="customerAuthLabel">حسابي / الدخول</span>
                 </button>
-                <button class="cart-btn" onclick="openCartDrawer()" title="View Cart">
+                <button class="cart-btn" data-lumiere-click="openCartDrawer()" title="View Cart">
                     <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
                     </svg>
@@ -170,10 +170,10 @@
         </div>
 
         <div class="filter-pills">
-            <button class="filter-btn active" data-cat="all" onclick="filterCategory('all')" data-i18n="filterAll">الكل (6)</button>
-            <button class="filter-btn" data-cat="serums" onclick="filterCategory('serums')" data-i18n="filterSerums">السيرومات الفعالة</button>
-            <button class="filter-btn" data-cat="creams" onclick="filterCategory('creams')" data-i18n="filterCreams">الكريمات والترميم</button>
-            <button class="filter-btn" data-cat="cleansers" onclick="filterCategory('cleansers')" data-i18n="filterCleansers">التنظيف والتونر</button>
+            <button class="filter-btn active" data-cat="all" data-lumiere-click="filterCategory('all')" data-i18n="filterAll">الكل (6)</button>
+            <button class="filter-btn" data-cat="serums" data-lumiere-click="filterCategory('serums')" data-i18n="filterSerums">السيرومات الفعالة</button>
+            <button class="filter-btn" data-cat="creams" data-lumiere-click="filterCategory('creams')" data-i18n="filterCreams">الكريمات والترميم</button>
+            <button class="filter-btn" data-cat="cleansers" data-lumiere-click="filterCategory('cleansers')" data-i18n="filterCleansers">التنظيف والتونر</button>
         </div>
 
         <div id="lumiereProductsGrid" class="products-grid">
@@ -233,7 +233,7 @@
                     <span id="bundlePriceOriginal" style="font-size: 1.2rem; text-decoration: line-through; color: #8F8A84;">520 ر.س</span>
                 </div>
 
-                <button class="btn-luxury" onclick="quickBuyBundle()" style="background: var(--accent-gold); color: #1C1917; width: 100%; justify-content: center;" data-i18n="bundleBuy">
+                <button class="btn-luxury" data-lumiere-click="quickBuyBundle()" style="background: var(--accent-gold); color: #1C1917; width: 100%; justify-content: center;" data-i18n="bundleBuy">
                     اطلب المجموعة كاملة الآن بخصم 30%
                 </button>
             </div>
@@ -286,7 +286,7 @@
             </div>
 
             <div class="faq-item">
-                <div class="faq-question" onclick="toggleFaq(this)">
+                <div class="faq-question" data-lumiere-click="toggleFaq(this)">
                     <span data-i18n="faq1Q">هل المنتجات مناسبة للحوامل وللبشرة الحساسة؟</span>
                     <span class="faq-icon">+</span>
                 </div>
@@ -294,7 +294,7 @@
             </div>
 
             <div class="faq-item">
-                <div class="faq-question" onclick="toggleFaq(this)">
+                <div class="faq-question" data-lumiere-click="toggleFaq(this)">
                     <span data-i18n="faq2Q">كم تستغرق مدة الشحن لدول الخليج؟</span>
                     <span class="faq-icon">+</span>
                 </div>
@@ -302,7 +302,7 @@
             </div>
 
             <div class="faq-item">
-                <div class="faq-question" onclick="toggleFaq(this)">
+                <div class="faq-question" data-lumiere-click="toggleFaq(this)">
                     <span data-i18n="faq3Q">ما هي سياسة الاسترجاع والضمان الذهبي؟</span>
                     <span class="faq-icon">+</span>
                 </div>
@@ -312,9 +312,9 @@
     </section>
 
     <!-- Quick View Modal with Tabs -->
-    <div id="quickViewOverlay" class="modal-overlay" onclick="closeQuickView()">
-        <div class="quickview-modal" onclick="event.stopPropagation()">
-            <button class="modal-close-btn" onclick="closeQuickView()">✕</button>
+    <div id="quickViewOverlay" class="modal-overlay" data-lumiere-click="closeQuickView()">
+        <div class="quickview-modal" data-lumiere-click="event.stopPropagation()">
+            <button class="modal-close-btn" data-lumiere-click="closeQuickView()">✕</button>
             <div class="qv-grid">
                 <div style="border-radius: var(--radius-md); overflow: hidden; background: #FAF7F2;">
                     <img id="qvImage" src="" width="362" height="362" alt="Product Detail" style="width: 100%; aspect-ratio: 1/1; object-fit: cover; display: block;">
@@ -327,9 +327,9 @@
                     <p id="qvDesc" style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 20px;"></p>
 
                     <div style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 14px;">
-                        <button id="tabBtn_benefits" class="qv-tab-btn active" onclick="switchTab('benefits')" style="background: none; border: none; border-bottom: 2px solid var(--accent-gold); padding: 6px 12px; font-weight: 700; cursor: pointer;">الفوائد السريرية</button>
-                        <button id="tabBtn_usage" class="qv-tab-btn" onclick="switchTab('usage')" style="background: none; border: none; padding: 6px 12px; font-weight: 600; cursor: pointer; color: var(--text-muted);">طريقة الاستخدام</button>
-                        <button id="tabBtn_ingredients" class="qv-tab-btn" onclick="switchTab('ingredients')" style="background: none; border: none; padding: 6px 12px; font-weight: 600; cursor: pointer; color: var(--text-muted);">المكونات</button>
+                        <button id="tabBtn_benefits" class="qv-tab-btn active" data-lumiere-click="switchTab('benefits')" style="background: none; border: none; border-bottom: 2px solid var(--accent-gold); padding: 6px 12px; font-weight: 700; cursor: pointer;">الفوائد السريرية</button>
+                        <button id="tabBtn_usage" class="qv-tab-btn" data-lumiere-click="switchTab('usage')" style="background: none; border: none; padding: 6px 12px; font-weight: 600; cursor: pointer; color: var(--text-muted);">طريقة الاستخدام</button>
+                        <button id="tabBtn_ingredients" class="qv-tab-btn" data-lumiere-click="switchTab('ingredients')" style="background: none; border: none; padding: 6px 12px; font-weight: 600; cursor: pointer; color: var(--text-muted);">المكونات</button>
                     </div>
 
                     <div id="tabContent_benefits" class="qv-tab-content" style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 20px;">
@@ -351,11 +351,11 @@
     </div>
 
     <!-- Slide-out Cart Drawer with Coupon -->
-    <div id="cartDrawerOverlay" class="cart-drawer-overlay" onclick="closeCartDrawer()"></div>
+    <div id="cartDrawerOverlay" class="cart-drawer-overlay" data-lumiere-click="closeCartDrawer()"></div>
     <aside id="cartDrawer" class="cart-drawer">
         <div class="drawer-header">
             <h3 data-i18n="cartTitle">حقيبة التسوق</h3>
-            <button class="close-drawer-btn" onclick="closeCartDrawer()">✕</button>
+            <button class="close-drawer-btn" data-lumiere-click="closeCartDrawer()">✕</button>
         </div>
         <div id="cartDrawerItems" class="drawer-body">
             <!-- Items injected by JS -->
@@ -363,7 +363,7 @@
         <div class="drawer-footer">
             <div class="coupon-row">
                 <input type="text" id="couponCodeInput" class="coupon-input" placeholder="كود الخصم (جربي GLOW10)">
-                <button class="btn-apply-coupon" onclick="applyCoupon()">تطبيق</button>
+                <button class="btn-apply-coupon" data-lumiere-click="applyCoupon()">تطبيق</button>
             </div>
             <div id="couponNotice" style="font-size: 0.78rem; margin-bottom: 10px;"></div>
 
@@ -371,7 +371,7 @@
                 <span data-i18n="cartTotal">المجموع الإجمالي:</span>
                 <span id="cartDrawerTotal">0 ر.س</span>
             </div>
-            <button class="btn-checkout" onclick="closeCartDrawer(); openCheckoutModal();" data-i18n="btnCheckout">
+            <button class="btn-checkout" data-lumiere-click="closeCartDrawer(); openCheckoutModal();" data-i18n="btnCheckout">
                 إتمام الطلب السريع ⚡
             </button>
         </div>
@@ -380,19 +380,19 @@
     <!-- Fast Checkout Modal -->
     <div id="checkoutModalOverlay" class="modal-overlay">
         <div class="checkout-modal">
-            <button class="modal-close-btn" onclick="closeCheckoutModal()">✕</button>
+            <button class="modal-close-btn" data-lumiere-click="closeCheckoutModal()">✕</button>
             <h3 class="serif-font" style="font-size: 1.6rem; margin-bottom: 8px; color: var(--text-primary);" data-i18n="checkoutTitle">إتمام الطلب والشحن السريع</h3>
             <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 20px;">يرجى تزويدنا بعنوان التوصيل لتجهيز شحنتك فوراً.</p>
 
             <form id="lumiereCheckoutForm">
                 <div class="form-group">
                     <label class="form-label" data-i18n="lblFullName">الاسم الكامل *</label>
-                    <input type="text" id="customerName" class="form-input" required placeholder="مثال: سارة الشمري">
+                    <input type="text" id="customerName" class="form-input" required autocomplete="name" inputmode="text" placeholder="مثال: سارة الشمري">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" data-i18n="lblPhone">رقم الجوال *</label>
-                    <input type="tel" id="customerPhone" class="form-input" required placeholder="مثال: 966501234567">
+                    <input type="tel" id="customerPhone" class="form-input" required autocomplete="tel" inputmode="tel" placeholder="مثال: 966501234567">
                 </div>
 
                 <div class="form-group">
@@ -411,12 +411,12 @@
 
                 <div class="form-group">
                     <label class="form-label" data-i18n="lblCity">المدينة / المنطقة *</label>
-                    <input type="text" id="customerCity" class="form-input" required placeholder="مثال: الرياض / دبي">
+                    <input type="text" id="customerCity" class="form-input" required autocomplete="address-level2" inputmode="text" placeholder="مثال: الرياض / دبي">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" data-i18n="lblAddress">العنوان بالتفصيل *</label>
-                    <input type="text" id="customerAddress" class="form-input" required placeholder="اسم الحي والشارع">
+                    <input type="text" id="customerAddress" class="form-input" required autocomplete="street-address" inputmode="text" placeholder="اسم الحي والشارع">
                 </div>
 
                 <div class="form-group">
@@ -499,7 +499,7 @@
         <div class="modal-box" style="background:#FAF7F2; color:#1C1917; border:1px solid var(--accent-gold); max-width: 520px; border-radius: 20px; padding: 32px; box-shadow: 0 25px 60px rgba(0,0,0,0.3);">
             
             <!-- Close Button -->
-            <button onclick="closeCustomerModal()" style="position: absolute; top: 20px; inset-inline-end: 20px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #888;">✕</button>
+            <button data-lumiere-click="closeCustomerModal()" style="position: absolute; top: 20px; inset-inline-end: 20px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #888;">✕</button>
 
             <!-- AUTH VIEW (LOGIN / REGISTER) -->
             <div id="customerAuthView">
@@ -510,19 +510,19 @@
 
                 <!-- Tabs: Login / Register -->
                 <div style="display: flex; border-bottom: 1px solid #E7E5E4; margin-bottom: 24px;">
-                    <button id="tabLoginBtn" onclick="switchAuthMode('login')" style="flex: 1; padding: 10px; background: none; border: none; border-bottom: 2px solid var(--accent-gold); font-weight: 700; color: #1C1917; cursor: pointer;">تسجيل الدخول</button>
-                    <button id="tabRegisterBtn" onclick="switchAuthMode('register')" style="flex: 1; padding: 10px; background: none; border: none; border-bottom: 2px solid transparent; color: #78716C; cursor: pointer;">إنشاء حساب جديد</button>
+                    <button id="tabLoginBtn" data-lumiere-click="switchAuthMode('login')" style="flex: 1; padding: 10px; background: none; border: none; border-bottom: 2px solid var(--accent-gold); font-weight: 700; color: #1C1917; cursor: pointer;">تسجيل الدخول</button>
+                    <button id="tabRegisterBtn" data-lumiere-click="switchAuthMode('register')" style="flex: 1; padding: 10px; background: none; border: none; border-bottom: 2px solid transparent; color: #78716C; cursor: pointer;">إنشاء حساب جديد</button>
                 </div>
 
                 <!-- LOGIN FORM -->
-                <form id="customerLoginForm" action="javascript:void(0);" onsubmit="return handleCustomerLogin(event)">
+                <form id="customerLoginForm" action="" data-lumiere-submit="return handleCustomerLogin(event)">
                     <div class="form-group" style="margin-bottom: 16px;">
                         <label style="font-size: 0.85rem; font-weight: 600; color: #44403C;">البريد الإلكتروني</label>
-                        <input type="email" id="custLoginEmail" class="form-input" style="background: #fff; border: 1px solid #D6D3D1; color: #1C1917;" placeholder="name@example.com" required>
+                        <input type="email" id="custLoginEmail" class="form-input" autocomplete="email" inputmode="email" style="background: #fff; border: 1px solid #D6D3D1; color: #1C1917;" placeholder="name@example.com" required>
                     </div>
                     <div class="form-group" style="margin-bottom: 24px;">
                         <label style="font-size: 0.85rem; font-weight: 600; color: #44403C;">كلمة المرور</label>
-                        <input type="password" id="custLoginPassword" class="form-input" style="background: #fff; border: 1px solid #D6D3D1; color: #1C1917;" placeholder="••••••••" required>
+                        <input type="password" id="custLoginPassword" class="form-input" autocomplete="current-password" style="background: #fff; border: 1px solid #D6D3D1; color: #1C1917;" placeholder="••••••••" required>
                     </div>
                     <button type="submit" class="btn-luxury" style="width: 100%; justify-content: center; background: var(--accent-gold); color: #fff;">
                         دخول إلى حسابي 🌸
@@ -543,7 +543,7 @@
                 </form>
 
                 <!-- FORGOT PASSWORD FORM -->
-                <form id="customerForgotForm" action="javascript:void(0);" onsubmit="return handleCustomerForgotPassword(event)" style="display: none;">
+                <form id="customerForgotForm" action="" data-lumiere-submit="return handleCustomerForgotPassword(event)" style="display: none;">
                     <div class="form-group" style="margin-bottom: 16px;">
                         <label style="font-size: 0.85rem; font-weight: 600; color: #44403C;">البريد الإلكتروني</label>
                         <input type="email" id="custForgotEmail" class="form-input" style="background: #fff; border: 1px solid #D6D3D1; color: #1C1917;" placeholder="name@example.com" required>
@@ -557,7 +557,7 @@
                 </form>
 
                 <!-- RESET PASSWORD FORM (shown when opened via ?resetToken=...&type=customer) -->
-                <form id="customerResetForm" action="javascript:void(0);" onsubmit="return handleCustomerResetPassword(event)" style="display: none;">
+                <form id="customerResetForm" action="" data-lumiere-submit="return handleCustomerResetPassword(event)" style="display: none;">
                     <div class="form-group" style="margin-bottom: 16px;">
                         <label style="font-size: 0.85rem; font-weight: 600; color: #44403C;">كلمة المرور الجديدة</label>
                         <input type="password" id="custNewPassword" class="form-input" style="background: #fff; border: 1px solid #D6D3D1; color: #1C1917;" placeholder="••••••••" minlength="6" required>
@@ -569,26 +569,26 @@
                 <div id="customerAuthFormMsg" style="text-align:center; font-size:0.85rem; margin-top:10px;"></div>
 
                 <!-- REGISTER FORM -->
-                <form id="customerRegisterForm" action="javascript:void(0);" onsubmit="return handleCustomerRegister(event)" style="display: none;">
+                <form id="customerRegisterForm" action="" data-lumiere-submit="return handleCustomerRegister(event)" style="display: none;">
                     <div class="form-group" style="margin-bottom: 12px;">
                         <label style="font-size: 0.85rem; font-weight: 600; color: #44403C;">الاسم الكامل</label>
-                        <input type="text" id="custRegName" class="form-input" style="background: #fff; border: 1px solid #D6D3D1; color: #1C1917;" placeholder="الاسم الكامل" required>
+                        <input type="text" id="custRegName" class="form-input" autocomplete="name" inputmode="text" style="background: #fff; border: 1px solid #D6D3D1; color: #1C1917;" placeholder="الاسم الكامل" required>
                     </div>
                     <div class="form-group" style="margin-bottom: 12px;">
                         <label style="font-size: 0.85rem; font-weight: 600; color: #44403C;">البريد الإلكتروني</label>
-                        <input type="email" id="custRegEmail" class="form-input" style="background: #fff; border: 1px solid #D6D3D1; color: #1C1917;" placeholder="name@example.com" required>
+                        <input type="email" id="custRegEmail" class="form-input" autocomplete="email" inputmode="email" style="background: #fff; border: 1px solid #D6D3D1; color: #1C1917;" placeholder="name@example.com" required>
                     </div>
                     <div class="form-group" style="margin-bottom: 12px;">
                         <label style="font-size: 0.85rem; font-weight: 600; color: #44403C;">رقم الجوال (مع الرمز الدولي)</label>
-                        <input type="tel" id="custRegPhone" class="form-input" style="background: #fff; border: 1px solid #D6D3D1; color: #1C1917;" placeholder="+966 50 000 0000" required>
+                        <input type="tel" id="custRegPhone" class="form-input" autocomplete="tel" inputmode="tel" style="background: #fff; border: 1px solid #D6D3D1; color: #1C1917;" placeholder="+966 50 000 0000" required>
                     </div>
                     <div class="form-group" style="margin-bottom: 12px;">
                         <label style="font-size: 0.85rem; font-weight: 600; color: #44403C;">المدينة والدولة</label>
-                        <input type="text" id="custRegCity" class="form-input" style="background: #fff; border: 1px solid #D6D3D1; color: #1C1917;" placeholder="الرياض، المملكة العربية السعودية" required>
+                        <input type="text" id="custRegCity" class="form-input" autocomplete="address-level2" inputmode="text" style="background: #fff; border: 1px solid #D6D3D1; color: #1C1917;" placeholder="الرياض، المملكة العربية السعودية" required>
                     </div>
                     <div class="form-group" style="margin-bottom: 20px;">
                         <label style="font-size: 0.85rem; font-weight: 600; color: #44403C;">كلمة المرور (6 أحرف أو أكثر)</label>
-                        <input type="password" id="custRegPassword" class="form-input" style="background: #fff; border: 1px solid #D6D3D1; color: #1C1917;" placeholder="••••••••" required>
+                        <input type="password" id="custRegPassword" class="form-input" autocomplete="new-password" style="background: #fff; border: 1px solid #D6D3D1; color: #1C1917;" placeholder="••••••••" required>
                     </div>
                     <button type="submit" class="btn-luxury" style="width: 100%; justify-content: center; background: var(--accent-gold); color: #fff;">
                         انضمام لنادي لوميير للنخبة 👑 (هدية 100 نقطة)
@@ -617,8 +617,8 @@
                 </div>
 
                 <div style="display: flex; gap: 12px;">
-                    <button onclick="logoutCustomer()" class="btn-outline" style="flex: 1; padding: 10px; justify-content: center; border-color: #DC2626; color: #DC2626;">تسجيل الخروج ✕</button>
-                    <button onclick="closeCustomerModal()" class="btn-luxury" style="flex: 1; padding: 10px; justify-content: center; background: var(--accent-gold); color: #fff;">متابعة التسوق 🛍️</button>
+                    <button data-lumiere-click="logoutCustomer()" class="btn-outline" style="flex: 1; padding: 10px; justify-content: center; border-color: #DC2626; color: #DC2626;">تسجيل الخروج ✕</button>
+                    <button data-lumiere-click="closeCustomerModal()" class="btn-luxury" style="flex: 1; padding: 10px; justify-content: center; background: var(--accent-gold); color: #fff;">متابعة التسوق 🛍️</button>
                 </div>
             </div>
 
@@ -627,26 +627,26 @@
     
 
     <!-- Mobile Slide-Out Drawer Menu -->
-    <div id="mobileDrawerOverlay" class="mobile-drawer-overlay" onclick="toggleMobileNav()"></div>
+    <div id="mobileDrawerOverlay" class="mobile-drawer-overlay" data-lumiere-click="toggleMobileNav()"></div>
     <div id="mobileDrawer" class="mobile-drawer">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; border-bottom:1px solid rgba(197,160,89,0.2); padding-bottom:16px;">
             <div>
                 <div class="logo-text" style="font-size:1.6rem; color:var(--accent-gold);">LUMIÈRE</div>
                 <div class="logo-sub" style="font-size:0.65rem;">PARIS • MOBILE</div>
             </div>
-            <button onclick="toggleMobileNav()" style="background:none; border:none; color:#1C1917; font-size:1.6rem; cursor:pointer;">✕</button>
+            <button data-lumiere-click="toggleMobileNav()" style="background:none; border:none; color:#1C1917; font-size:1.6rem; cursor:pointer;">✕</button>
         </div>
 
         <ul style="list-style:none; display:flex; flex-direction:column; gap:16px; margin-bottom:28px;">
-            <li><a href="#products" onclick="filterCategory('all'); toggleMobileNav();" style="font-size:1.1rem; color:#1C1917; text-decoration:none; font-weight:600;">🌿 كافة المستحضرات</a></li>
-            <li><a href="#products" onclick="filterCategory('serums'); toggleMobileNav();" style="font-size:1.1rem; color:#1C1917; text-decoration:none; font-weight:600;">✨ السيرومات المركزة</a></li>
-            <li><a href="#products" onclick="filterCategory('creams'); toggleMobileNav();" style="font-size:1.1rem; color:#1C1917; text-decoration:none; font-weight:600;">🌸 الكريمات ومحيط العين</a></li>
-            <li><a href="#products" onclick="filterCategory('cleansers'); toggleMobileNav();" style="font-size:1.1rem; color:#1C1917; text-decoration:none; font-weight:600;">🫧 التنظيف والأقنعة</a></li>
-            <li><a href="#bundle" onclick="toggleMobileNav();" style="font-size:1.1rem; color:var(--accent-gold); text-decoration:none; font-weight:700;">💎 باقة الإشراقة الفاخرة (-30%)</a></li>
+            <li><a href="#products" data-lumiere-click="filterCategory('all'); toggleMobileNav();" style="font-size:1.1rem; color:#1C1917; text-decoration:none; font-weight:600;">🌿 كافة المستحضرات</a></li>
+            <li><a href="#products" data-lumiere-click="filterCategory('serums'); toggleMobileNav();" style="font-size:1.1rem; color:#1C1917; text-decoration:none; font-weight:600;">✨ السيرومات المركزة</a></li>
+            <li><a href="#products" data-lumiere-click="filterCategory('creams'); toggleMobileNav();" style="font-size:1.1rem; color:#1C1917; text-decoration:none; font-weight:600;">🌸 الكريمات ومحيط العين</a></li>
+            <li><a href="#products" data-lumiere-click="filterCategory('cleansers'); toggleMobileNav();" style="font-size:1.1rem; color:#1C1917; text-decoration:none; font-weight:600;">🫧 التنظيف والأقنعة</a></li>
+            <li><a href="#bundle" data-lumiere-click="toggleMobileNav();" style="font-size:1.1rem; color:var(--accent-gold); text-decoration:none; font-weight:700;">💎 باقة الإشراقة الفاخرة (-30%)</a></li>
         </ul>
 
         <div style="padding-top:20px; border-top:1px solid #E7E5E4; display: flex; flex-direction: column; gap: 12px;">
-            <button onclick="openCustomerAuthModal(); toggleMobileNav();" class="btn-luxury" style="display:flex; align-items:center; width:100%; justify-content:center; gap:8px; padding:12px; background:var(--accent-gold); color:#fff; margin-bottom:0;">
+            <button data-lumiere-click="openCustomerAuthModal(); toggleMobileNav();" class="btn-luxury" style="display:flex; align-items:center; width:100%; justify-content:center; gap:8px; padding:12px; background:var(--accent-gold); color:#fff; margin-bottom:0;">
                 👤 حسابي / تسجيل الدخول
             </button>
             <a href="https://wa.me/966500000000" target="_blank" class="btn-outline" style="display:flex; align-items:center; width:100%; justify-content:center; gap:8px; padding:12px; text-decoration:none; border-color:#25D366; color:#25D366;">
@@ -657,22 +657,22 @@
 
     <!-- Mobile Bottom Sticky Floating Navigation Bar -->
     <nav id="mobileBottomNav" class="mobile-bottom-nav">
-        <a href="#products" onclick="filterCategory('all')" class="bottom-nav-item active">
+        <a href="#products" data-lumiere-click="filterCategory('all')" class="bottom-nav-item active">
             <span class="bottom-nav-icon">🛍️</span>
             <span class="bottom-nav-label">المتجر</span>
         </a>
-        <a href="#products" onclick="filterCategory('serums')" class="bottom-nav-item">
+        <a href="#products" data-lumiere-click="filterCategory('serums')" class="bottom-nav-item">
             <span class="bottom-nav-icon">✨</span>
             <span class="bottom-nav-label">السيروم</span>
         </a>
-        <a href="javascript:void(0)" onclick="openCartDrawer()" class="bottom-nav-item cart-highlight">
+        <a href="#" data-lumiere-click="openCartDrawer()" class="bottom-nav-item cart-highlight">
             <div style="position:relative;">
                 <span class="bottom-nav-icon">👜</span>
                 <span id="mobileCartBadge" class="mobile-badge">0</span>
             </div>
             <span class="bottom-nav-label">السلة</span>
         </a>
-        <a href="javascript:void(0)" onclick="openCustomerAuthModal()" class="bottom-nav-item">
+        <a href="#" data-lumiere-click="openCustomerAuthModal()" class="bottom-nav-item">
             <span class="bottom-nav-icon">👤</span>
             <span class="bottom-nav-label">حسابي</span>
         </a>

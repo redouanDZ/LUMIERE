@@ -1,4 +1,10 @@
-require('dotenv').config();
+require('dotenv').config({ override: false });
+
+if (process.env.NODE_ENV === 'production') {
+    const missingSecrets = ['JWT_SECRET'].filter(key => !process.env[key] || process.env[key].length < 32);
+    if (missingSecrets.length) throw new Error(`Missing or weak production secrets: ${missingSecrets.join(', ')}`);
+    if (!process.env.PUBLIC_URL) console.warn('WARNING: PUBLIC_URL is not configured; card checkout and password-reset links are disabled in production.');
+}
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
@@ -18,8 +24,7 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://accounts.google.com/gsi/client"],
-            scriptSrcAttr: ["'unsafe-inline'"],
+            scriptSrc: ["'self'", "https://accounts.google.com/gsi/client", "https://cdn.jsdelivr.net"],
             styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
             fontSrc: ["'self'", "https://fonts.gstatic.com"],
             imgSrc: ["'self'", "data:", "https://*.googleusercontent.com"],
@@ -32,7 +37,7 @@ app.use(helmet({
 // CORS Configuration: Restrict to explicit allowed origins
 const allowedOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
-    : ['http://localhost:4000', 'http://127.0.0.1:4000', 'https://lumiere-v1-0-0.onrender.com'];
+    : ['http://localhost:4000', 'http://127.0.0.1:4000'];
 
 app.use(cors({
     origin: (origin, callback) => {
@@ -72,13 +77,39 @@ app.use(['/data', '/src', '/scripts', '/tests', '/package.json', '/package-lock.
 // Serve ONLY authorized public static assets
 app.use('/css', express.static(path.join(__dirname, 'css')));
 app.use('/js', express.static(path.join(__dirname, 'js')));
+app.use('/images/uploads', express.static(path.join(__dirname, 'data/uploads'), {
+    fallthrough: false,
+    index: false
+}));
 app.use('/images', express.static(path.join(__dirname, 'images')));
 app.use('/admin', express.static(path.join(__dirname, 'admin')));
 app.get('/manifest.json', (req, res) => {
     res.sendFile(path.join(__dirname, 'manifest.json'));
 });
+app.get('/order-confirmation.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'order-confirmation.html'));
+});
 
-// API Routes
+// Defense-in-depth CSRF protection for cookie-authenticated state changes.
+// Browsers send Origin on cross-origin form/fetch POST/PUT/PATCH/DELETE requests.
+// Requests without Origin are allowed for server-to-server webhooks and CLI clients;
+// authentication/authorization still applies to protected endpoints.
+app.use('/api', (req, res, next) => {
+    if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
+
+    const origin = req.get('origin');
+    if (!origin) return next();
+
+    const normalized = origin.replace(/\/$/, '');
+    const publicUrl = process.env.PUBLIC_URL?.replace(/\/$/, '');
+    const allowed = new Set([...allowedOrigins, publicUrl].filter(Boolean));
+
+    if (!allowed.has(normalized)) {
+        return res.status(403).json({ success: false, message: 'Blocked by CSRF origin policy' });
+    }
+    next();
+});
+
 app.use('/api', apiRoutes);
 // Cloud Health Check Endpoint
 app.get('/health', (req, res) => {

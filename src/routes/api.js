@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
-const { query, run } = require('../database/db');
+const { db, query, run } = require('../database/db');
 const { validateOrderInput, sanitizeString } = require('../middleware/validator');
 const { requireAdmin, getJwtSecret } = require('../middleware/auth');
-const { authLimiter, orderLimiter } = require('../middleware/rateLimiter');
+const { authLimiter, orderLimiter, uploadLimiter } = require('../middleware/rateLimiter');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
@@ -30,7 +30,11 @@ const sendResetEmail = async (toEmail, resetUrl) => {
     // provider (SMTP env vars + nodemailer, SendGrid, etc.) before selling
     // this to a customer who needs real end-user emails delivered.
     if (!process.env.SMTP_HOST) {
-        console.log(`[password-reset] No SMTP configured. Reset link for ${toEmail}: ${resetUrl}`);
+        if (process.env.NODE_ENV !== 'production') {
+            console.log(`[password-reset] No SMTP configured. Reset link for ${toEmail}: ${resetUrl}`);
+        } else {
+            console.warn('[password-reset] SMTP is not configured; reset email was not delivered.');
+        }
         return { delivered: false };
     }
     try {
@@ -164,6 +168,9 @@ router.post('/coupons/validate', async (req, res) => {
             return res.status(404).json({ success: false, message: 'Invalid or expired coupon code' });
         }
         const coupon = coupons[0];
+        if (coupon.max_uses != null && Number(coupon.used_count || 0) >= Number(coupon.max_uses)) {
+            return res.status(400).json({ success: false, message: 'رمز الخصم مستنفد الاستخدام' });
+        }
         res.json({
             success: true,
             code: coupon.code,
@@ -175,7 +182,7 @@ router.post('/coupons/validate', async (req, res) => {
 });
 
 // Constant-time dummy hash to mitigate timing attacks on invalid account lookups
-const DUMMY_BCRYPT_HASH = '$2a$10$abcdefghijklmnopqrstuuabcdefghijklmnopqrstuuabcdefghijk';
+const DUMMY_BCRYPT_HASH = '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy';
 
 // Create Order
 router.post('/orders', orderLimiter, validateOrderInput, async (req, res) => {
@@ -195,131 +202,202 @@ router.post('/orders', orderLimiter, validateOrderInput, async (req, res) => {
             const customerToken = req.cookies?.lumiere_customer_token || req.headers['authorization']?.split(' ')[1];
             if (customerToken) {
                 const decoded = jwt.verify(customerToken, getJwtSecret());
-                if (decoded && decoded.id && decoded.role === 'customer') {
-                    customerId = decoded.id;
+                if (decoded?.id && decoded.role === 'customer') {
+                    const sessionRows = await query('SELECT session_version FROM customers WHERE id = ?', [decoded.id]);
+                    if (sessionRows.length && Number(decoded.sessionVersion || 0) === Number(sessionRows[0].session_version || 0)) {
+                        customerId = decoded.id;
+                    }
                 }
             }
-        } catch (e) {
-            // Guest order or invalid token
+        } catch (_) {
+            // Treat invalid customer cookies as guest checkout.
         }
 
+        const rates = { SAR: 3.75, AED: 3.67, USD: 1, EUR: 0.92, KWD: 0.31, DZD: 220 };
+        const rate = rates[currency];
+        const currencyDecimals = currency === 'KWD' ? 3 : 2;
+
+        // Validate pricing and reserve stock atomically. No price or stock value
+        // from the browser is trusted.
         let totalUsd = 0;
         const processedItems = [];
+        let appliedCoupon = null;
 
-        // Validate stock and calculate pricing
-        for (const item of items) {
-            const dbProd = await query('SELECT * FROM products WHERE id = ? AND is_active = 1', [item.id]);
-            if (dbProd.length > 0) {
-                const prod = dbProd[0];
-                const qty = Math.min(20, Math.max(1, parseInt(item.qty, 10) || 1));
+        const createOrder = db.transaction(() => {
+            for (const item of items) {
+                const prod = db.prepare(
+                    'SELECT * FROM products WHERE id = ? AND is_active = 1'
+                ).get(item.id);
 
-                // Verify stock availability
-                if (prod.stock < qty) {
-                    return res.status(400).json({
-                        success: false,
-                        message: `عذراً، الكمية المطلوبة من [${prod.title_ar}] غير متوفرة حالياً (المتوفر بالمخزن: ${prod.stock} قطع)`
-                    });
+                if (!prod) continue;
+
+                const qty = item.qty;
+                const reservation = db.prepare(
+                    'UPDATE products SET stock = stock - ? WHERE id = ? AND is_active = 1 AND stock >= ?'
+                ).run(qty, prod.id, qty);
+
+                if (reservation.changes !== 1) {
+                    const current = db.prepare('SELECT title_ar, stock FROM products WHERE id = ?').get(prod.id);
+                    const available = current?.stock ?? 0;
+                    const error = new Error(`STOCK_UNAVAILABLE:${prod.id}:${available}:${current?.title_ar || ''}`);
+                    error.code = 'STOCK_UNAVAILABLE';
+                    throw error;
                 }
 
-                totalUsd += prod.price_usd * qty;
+                totalUsd += Number(prod.price_usd) * qty;
                 processedItems.push({
                     id: prod.id,
                     title: prod.title_ar,
-                    priceUsd: prod.price_usd,
+                    priceUsd: Number(prod.price_usd),
                     qty
                 });
             }
-        }
 
-        if (processedItems.length === 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'سلة المشتريات لا تحتوي على منتجات صالحة'
-            });
-        }
+            if (processedItems.length === 0) {
+                const error = new Error('NO_VALID_PRODUCTS');
+                error.code = 'NO_VALID_PRODUCTS';
+                throw error;
+            }
 
-        if (bundle) {
-            const bundleIds = ['serum', 'cream', 'cleanser'];
-            const requestedBundleIds = processedItems.map(item => item.id).sort();
-            if (processedItems.length !== 3 || requestedBundleIds.join(',') !== bundleIds.slice().sort().join(',') || processedItems.some(item => item.qty !== 1)) {
+            if (bundle) {
+                const bundleIds = ['serum', 'cream', 'cleanser'];
+                const requestedBundleIds = processedItems.map(item => item.id).sort();
+                if (
+                    processedItems.length !== 3 ||
+                    requestedBundleIds.join(',') !== bundleIds.slice().sort().join(',') ||
+                    processedItems.some(item => item.qty !== 1)
+                ) {
+                    const error = new Error('INVALID_BUNDLE');
+                    error.code = 'INVALID_BUNDLE';
+                    throw error;
+                }
+                totalUsd *= 0.7;
+            }
+
+            if (couponCode) {
+                const c = db.prepare(
+                    'SELECT * FROM coupons WHERE code = ? AND is_active = 1'
+                ).get(couponCode);
+
+                if (c) {
+                    if (!Number.isInteger(c.discount_percent) || c.discount_percent < 0 || c.discount_percent > 100) {
+                        const error = new Error('INVALID_COUPON_CONFIG');
+                        error.code = 'INVALID_COUPON_CONFIG';
+                        throw error;
+                    }
+                    const reservationCount = db.prepare(
+                        "SELECT COUNT(*) AS count FROM coupon_reservations WHERE coupon_id = ? AND status IN ('reserved', 'consumed')"
+                    ).get(c.id)?.count || 0;
+                    const availableUses = c.max_uses == null ? Infinity : Number(c.max_uses) - Number(reservationCount);
+                    if (availableUses <= 0) {
+                        const error = new Error('COUPON_EXHAUSTED');
+                        error.code = 'COUPON_EXHAUSTED';
+                        throw error;
+                    }
+                    totalUsd *= 1 - (c.discount_percent / 100);
+                    appliedCoupon = c;
+                }
+            }
+
+            totalUsd = Math.round(totalUsd * 100) / 100;
+            const totalLocal = Math.round(totalUsd * rate * 10 ** currencyDecimals) / 10 ** currencyDecimals;
+
+            const randomSuffix = crypto.randomInt(1000, 10000);
+            const orderNumber = `LUM-${Date.now().toString().slice(-6)}-${randomSuffix}`;
+
+            const result = db.prepare(`
+                INSERT INTO orders (
+                    order_number, customer_id, customer_name, customer_phone, customer_country, customer_city,
+                    customer_address, payment_method, currency, total_usd, total_local, items_json, coupon_code,
+                    payment_status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `).run(
+                orderNumber, customerId, name, phone, country, city, address, paymentMethod, currency,
+                totalUsd, totalLocal, JSON.stringify(processedItems), appliedCoupon?.code || null,
+                paymentMethod === 'cod' ? 'pending_cod' : 'pending_payment'
+            );
+
+            // Reserve the coupon for this order. For COD it is consumed immediately;
+            // for card payments it remains reserved until a verified paid webhook.
+            if (appliedCoupon) {
+                const reservation = db.prepare(`
+                    INSERT INTO coupon_reservations (order_id, coupon_id, status)
+                    VALUES (?, ?, ?)
+                `).run(result.lastInsertRowid, appliedCoupon.id, paymentMethod === 'cod' ? 'consumed' : 'reserved');
+
+                if (reservation.changes !== 1) {
+                    const error = new Error('COUPON_EXHAUSTED');
+                    error.code = 'COUPON_EXHAUSTED';
+                    throw error;
+                }
+
+                if (paymentMethod === 'cod') {
+                    const consumed = db.prepare(
+                        'UPDATE coupons SET used_count = used_count + 1 WHERE id = ? AND (max_uses IS NULL OR used_count < max_uses)'
+                    ).run(appliedCoupon.id);
+                    if (consumed.changes !== 1) {
+                        const error = new Error('COUPON_EXHAUSTED');
+                        error.code = 'COUPON_EXHAUSTED';
+                        throw error;
+                    }
+                }
+            }
+
+            return { orderId: Number(result.lastInsertRowid), orderNumber, totalUsd, totalLocal };
+        });
+
+        let order;
+        try {
+            order = createOrder();
+        } catch (err) {
+            if (err.code === 'STOCK_UNAVAILABLE') {
+                const [, , available, title] = err.message.split(':');
+                return res.status(400).json({
+                    success: false,
+                    message: `عذراً، الكمية المطلوبة من [${title}] غير متوفرة حالياً (المتوفر بالمخزن: ${available} قطع)`
+                });
+            }
+            if (err.code === 'NO_VALID_PRODUCTS') {
+                return res.status(400).json({ success: false, message: 'سلة المشتريات لا تحتوي على منتجات صالحة' });
+            }
+            if (err.code === 'INVALID_BUNDLE') {
                 return res.status(400).json({ success: false, message: 'تركيبة الباقة غير صالحة' });
             }
-            totalUsd *= 0.7;
-        }
-
-        let discount = 0;
-        let appliedCouponId = null;
-        if (couponCode) {
-            const coup = await query('SELECT * FROM coupons WHERE code = ? AND is_active = 1', [couponCode]);
-            if (coup.length > 0) {
-                const c = coup[0];
-                if (c.max_uses && c.used_count >= c.max_uses) {
-                    return res.status(400).json({
-                        success: false,
-                        message: 'عذراً، لقد تم استنفاد الحد الأقصى لاستخدام رمز الخصم هذا'
-                    });
-                }
-                discount = c.discount_percent;
-                totalUsd = totalUsd * (1 - (discount / 100));
-                appliedCouponId = c.id;
+            if (err.code === 'COUPON_EXHAUSTED') {
+                return res.status(400).json({ success: false, message: 'عذراً، لقد تم استنفاد الحد الأقصى لاستخدام رمز الخصم هذا' });
             }
+            throw err;
         }
 
-        const rates = { SAR: 3.75, AED: 3.67, USD: 1.0, EUR: 0.92, KWD: 0.31, DZD: 220 };
-        const rate = rates[currency] || 3.75;
-        const totalLocal = Math.round(totalUsd * rate);
-
-        let result = null;
-        let orderNumber = '';
-        const maxRetries = 5;
-
-        for (let attempt = 0; attempt < maxRetries; attempt++) {
-            try {
-                const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-                orderNumber = `LUM-${Date.now().toString().slice(-6)}-${randomSuffix}`;
-
-                result = await run(`
-                    INSERT INTO orders (
-                        order_number, customer_id, customer_name, customer_phone, customer_country, customer_city,
-                        customer_address, payment_method, currency, total_usd, total_local, items_json, coupon_code
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `, [
-                    orderNumber, customerId, name, phone, country, city, address, paymentMethod, currency,
-                    totalUsd.toFixed(2), totalLocal, JSON.stringify(processedItems), couponCode || null
-                ]);
-                break;
-            } catch (insertErr) {
-                if (insertErr.message && insertErr.message.includes('UNIQUE') && attempt < maxRetries - 1) {
-                    continue;
-                }
-                throw insertErr;
-            }
-        }
-
-        // Deduct stock for all ordered products
-        for (const item of processedItems) {
-            await run('UPDATE products SET stock = MAX(0, stock - ?) WHERE id = ?', [item.qty, item.id]);
-        }
-
-        // COD orders are final at creation time. Card orders reserve stock but
-        // wait for the verified webhook before awarding benefits or consuming a coupon.
-        if (appliedCouponId && paymentMethod === 'cod') {
-            await run('UPDATE coupons SET used_count = used_count + 1 WHERE id = ?', [appliedCouponId]);
-        }
-
-        // Award reward points if registered customer
+        // COD is finalized immediately. Registered customers receive points only
+        // after a successfully created COD order.
         if (customerId && paymentMethod === 'cod') {
             await run('UPDATE customers SET reward_points = reward_points + 10 WHERE id = ?', [customerId]);
         }
 
-        // --- Card payment: create a Moyasar hosted-checkout invoice ---
-        // Card details never touch our server (PCI scope stays with Moyasar).
-        // Order is created first with payment_status='pending_payment'; the
-        // webhook below is the single source of truth that marks it 'paid'.
         let paymentUrl = null;
+
         if (paymentMethod === 'card') {
+            if (!process.env.PUBLIC_URL) {
+                // Compensating transaction: release stock and delete the pending order.
+                db.transaction(() => {
+                    const current = db.prepare('SELECT items_json FROM orders WHERE id = ?').get(order.orderId);
+                    let reservedItems = [];
+                    try { reservedItems = JSON.parse(current?.items_json || '[]'); } catch (_) {}
+                    for (const item of reservedItems) {
+                        db.prepare('UPDATE products SET stock = stock + ? WHERE id = ?').run(item.qty, item.id);
+                    }
+                    db.prepare('DELETE FROM coupon_reservations WHERE order_id = ?').run(order.orderId);
+                    db.prepare('DELETE FROM orders WHERE id = ?').run(order.orderId);
+                })();
+                return res.status(503).json({ success: false, message: 'إعداد PUBLIC_URL مطلوب لتفعيل الدفع بالبطاقة في الإنتاج' });
+            }
+
             try {
-                const baseUrl = process.env.PUBLIC_URL || `${req.protocol}://${req.get('host')}`;
+                const baseUrl = process.env.PUBLIC_URL.replace(/\/$/, '');
+                const currencyMinorUnits = currency === 'KWD' ? 1000 : 100;
+                const amountMinor = Math.round(order.totalLocal * currencyMinorUnits);
+
                 const moyasarRes = await fetch('https://api.moyasar.com/v1/invoices', {
                     method: 'POST',
                     headers: {
@@ -327,35 +405,58 @@ router.post('/orders', orderLimiter, validateOrderInput, async (req, res) => {
                         'Authorization': 'Basic ' + Buffer.from(process.env.MOYASAR_SECRET_KEY + ':').toString('base64')
                     },
                     body: JSON.stringify({
-                        amount: Math.round(totalLocal * 100), // Moyasar expects the smallest currency unit (halalas)
-                        currency: currency || 'SAR',
-                        description: `LUMIÈRE Botanics — طلب ${orderNumber}`,
-                        callback_url: `${baseUrl}/order-confirmation.html?order=${orderNumber}`,
-                        metadata: { order_number: orderNumber, order_id: result.lastID }
+                        amount: amountMinor,
+                        currency,
+                        description: `LUMIÈRE Botanics — طلب ${order.orderNumber}`,
+                        callback_url: `${baseUrl}/api/webhooks/moyasar`,
+                        success_url: `${baseUrl}/order-confirmation.html?order=${encodeURIComponent(order.orderNumber)}`,
+                        back_url: `${baseUrl}/`,
+                        metadata: { order_number: order.orderNumber, order_id: String(order.orderId) }
                     })
                 });
+
                 const invoice = await moyasarRes.json();
-                if (!moyasarRes.ok || !invoice.url) {
-                    console.error('[Moyasar] Invoice creation failed:', invoice);
-                    return res.status(502).json({ success: false, message: 'تعذر بدء عملية الدفع بالبطاقة، حاول لاحقاً أو اختر الدفع عند الاستلام' });
+
+                if (!moyasarRes.ok || !invoice.url || !invoice.id) {
+                    throw new Error('MOYASAR_INVOICE_FAILED');
                 }
-                await run('UPDATE orders SET payment_status = ?, moyasar_invoice_id = ? WHERE id = ?',
-                    ['pending_payment', invoice.id, result.lastID]);
+
+                await run(
+                    'UPDATE orders SET moyasar_invoice_id = ?, payment_status = ? WHERE id = ? AND payment_status = ?',
+                    [invoice.id, 'pending_payment', order.orderId, 'pending_payment']
+                );
                 paymentUrl = invoice.url;
             } catch (payErr) {
-                console.error('[Moyasar] Invoice request error:', payErr.message);
-                return res.status(502).json({ success: false, message: 'تعذر الاتصال ببوابة الدفع، حاول لاحقاً أو اختر الدفع عند الاستلام' });
+                console.error('[Moyasar] Invoice creation failed:', payErr.message);
+
+                // Release reserved stock and coupon reservation so a failed
+                // payment initialization never strands inventory.
+                db.transaction(() => {
+                    const current = db.prepare('SELECT items_json FROM orders WHERE id = ?').get(order.orderId);
+                    let reservedItems = [];
+                    try { reservedItems = JSON.parse(current?.items_json || '[]'); } catch (_) {}
+                    for (const item of reservedItems) {
+                        db.prepare('UPDATE products SET stock = stock + ? WHERE id = ?').run(item.qty, item.id);
+                    }
+                    db.prepare('DELETE FROM coupon_reservations WHERE order_id = ?').run(order.orderId);
+                    db.prepare('DELETE FROM orders WHERE id = ?').run(order.orderId);
+                })();
+
+                return res.status(502).json({
+                    success: false,
+                    message: 'تعذر بدء عملية الدفع بالبطاقة، حاول لاحقاً أو اختر الدفع عند الاستلام'
+                });
             }
         }
 
         res.status(201).json({
             success: true,
-            orderId: result.lastID,
-            orderNumber,
-            totalLocal,
+            orderId: order.orderId,
+            orderNumber: order.orderNumber,
+            totalLocal: order.totalLocal,
             currency,
-            paymentUrl, // non-null only for successful card-payment invoices; frontend redirects here
-            message: 'تم إنشاء الطلب بنجاح وتم خصم المخزون'
+            paymentUrl,
+            message: 'تم إنشاء الطلب بنجاح وتم حجز/خصم المخزون'
         });
     } catch (err) {
         safeError(res, err);
@@ -391,7 +492,7 @@ router.post('/auth/login', authLimiter, async (req, res) => {
         }
 
         const token = jwt.sign(
-            { id: user.id, name: user.name, email: user.email, role: user.role },
+            { id: user.id, name: user.name, email: user.email, role: user.role, sessionVersion: Number(user.session_version || 0) },
             getJwtSecret(),
             { expiresIn: '7d' }
         );
@@ -399,7 +500,7 @@ router.post('/auth/login', authLimiter, async (req, res) => {
         res.cookie('lumiere_admin_token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            sameSite: 'strict',
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
@@ -437,7 +538,7 @@ router.post('/admin/change-password', requireAdmin, async (req, res) => {
         }
 
         const newHash = await bcrypt.hash(newPassword, 12);
-        await run('UPDATE users SET password_hash = ? WHERE id = ?', [newHash, req.user.id]);
+        await run('UPDATE users SET password_hash = ?, session_version = session_version + 1 WHERE id = ?', [newHash, req.user.id]);
 
         res.json({ success: true, message: 'تم تحديث كلمة مرور المدير بنجاح' });
     } catch (err) {
@@ -462,6 +563,10 @@ router.post('/auth/forgot-password', authLimiter, async (req, res) => {
         if (users.length === 0) {
             return res.json(generic);
         }
+        if (process.env.NODE_ENV === 'production' && !process.env.SMTP_HOST) {
+            console.warn('[password-reset] SMTP is required in production; refusing to create an undeliverable reset token.');
+            return res.json(generic);
+        }
 
         const rawToken = crypto.randomBytes(32).toString('hex');
         const tokenHash = hashResetToken(rawToken);
@@ -470,7 +575,10 @@ router.post('/auth/forgot-password', authLimiter, async (req, res) => {
         await run('UPDATE users SET reset_token_hash = ?, reset_token_expires = ? WHERE id = ?',
             [tokenHash, expires, users[0].id]);
 
-        const baseUrl = process.env.PUBLIC_URL || `${req.protocol}://${req.get('host')}`;
+        const baseUrl = process.env.PUBLIC_URL
+            ? process.env.PUBLIC_URL.replace(/\/$/, '')
+            : (process.env.NODE_ENV === 'production' ? null : `${req.protocol}://${req.get('host')}`);
+        if (!baseUrl) return res.json(generic);
         const resetUrl = `${baseUrl}/admin/index.html?resetToken=${rawToken}&type=admin`;
         await sendResetEmail(users[0].email, resetUrl);
 
@@ -498,7 +606,7 @@ router.post('/auth/reset-password', authLimiter, async (req, res) => {
         }
 
         const newHash = await bcrypt.hash(newPassword, 12);
-        await run('UPDATE users SET password_hash = ?, reset_token_hash = NULL, reset_token_expires = NULL WHERE id = ?',
+        await run('UPDATE users SET password_hash = ?, session_version = session_version + 1, reset_token_hash = NULL, reset_token_expires = NULL WHERE id = ?',
             [newHash, users[0].id]);
 
         res.json({ success: true, message: 'تم تحديث كلمة المرور بنجاح، يمكنك الآن تسجيل الدخول' });
@@ -625,9 +733,19 @@ router.post('/admin/products', requireAdmin, async (req, res) => {
             ingredients, price_usd, stock, image, badge_ar, badge_en
         } = req.body;
 
-        const cleanId = sanitizeString(id || 'prod_' + Date.now());
-        const pUsd = parseFloat(price_usd) || 45;
-        const pStock = parseInt(stock) || 50;
+        const cleanId = String(id || 'prod_' + Date.now()).trim();
+        const pUsd = Number(price_usd);
+        const pStock = Number(stock);
+
+        if (!/^[A-Za-z0-9_-]{1,64}$/.test(cleanId)) {
+            return res.status(400).json({ success: false, message: 'معرّف المنتج غير صالح' });
+        }
+        if (!Number.isFinite(pUsd) || pUsd <= 0 || pUsd > 1000000) {
+            return res.status(400).json({ success: false, message: 'سعر المنتج غير صالح' });
+        }
+        if (!Number.isInteger(pStock) || pStock < 0 || pStock > 10000000) {
+            return res.status(400).json({ success: false, message: 'كمية المخزون غير صالحة' });
+        }
 
         if (!title_ar || typeof title_ar !== 'string' || !title_ar.trim()) {
             return res.status(400).json({ success: false, message: 'عنوان المنتج (عربي) مطلوب' });
@@ -665,7 +783,7 @@ router.post('/admin/products', requireAdmin, async (req, res) => {
             cleanCategoryAr, cleanCategoryEn,
             cleanDescAr, cleanDescEn, cleanBenefitsAr, cleanBenefitsEn,
             cleanUsageAr, cleanUsageEn, cleanIngredients,
-            pUsd, (pUsd * 1.3).toFixed(2), pStock, cleanImage,
+            pUsd, Math.round(pUsd * 1.3 * 100) / 100, pStock, cleanImage,
             cleanBadgeAr, cleanBadgeEn
         ]);
 
@@ -676,7 +794,7 @@ router.post('/admin/products', requireAdmin, async (req, res) => {
 });
 
 // UPLOAD: Upload product image from mobile or desktop (Admin only)
-router.post('/admin/upload-image', requireAdmin, async (req, res) => {
+router.post('/admin/upload-image', requireAdmin, uploadLimiter, async (req, res) => {
     try {
         const { imageBase64 } = req.body;
         if (!imageBase64 || typeof imageBase64 !== 'string') {
@@ -701,12 +819,20 @@ router.post('/admin/upload-image', requireAdmin, async (req, res) => {
         const ext = rawExt === 'jpeg' ? 'jpg' : rawExt;
         const buffer = Buffer.from(base64Data, 'base64');
 
+        // Validate image signatures instead of trusting the client MIME type.
+        const isJpeg = buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+        const isPng = buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10]));
+        const isWebp = buffer.length >= 12 && buffer.subarray(0, 4).toString('ascii') === 'RIFF' && buffer.subarray(8, 12).toString('ascii') === 'WEBP';
+        if (!isJpeg && !isPng && !isWebp) {
+            return res.status(400).json({ success: false, message: 'محتوى الصورة غير صالح' });
+        }
+
         // Enforce max 6MB binary size limit
         if (buffer.length > 6 * 1024 * 1024) {
             return res.status(400).json({ success: false, message: 'حجم الصورة يتجاوز الحد المسموح (6 ميغابايت)' });
         }
 
-        const uploadsDir = path.join(__dirname, '../../images/uploads');
+        const uploadsDir = path.join(__dirname, '../../data/uploads');
         if (!fs.existsSync(uploadsDir)) {
             fs.mkdirSync(uploadsDir, { recursive: true });
         }
@@ -731,6 +857,9 @@ router.post('/admin/upload-image', requireAdmin, async (req, res) => {
 router.patch('/admin/products/:id', requireAdmin, async (req, res) => {
     try {
         const { price_usd, stock, image } = req.body;
+        if (!/^[A-Za-z0-9_-]{1,64}$/.test(String(req.params.id))) {
+            return res.status(400).json({ success: false, message: 'معرّف المنتج غير صالح' });
+        }
         const parsedPrice = Number(price_usd);
         const parsedStock = Number(stock);
         if (!Number.isFinite(parsedPrice) || parsedPrice <= 0 || !Number.isInteger(parsedStock) || parsedStock < 0) {
@@ -762,8 +891,11 @@ router.patch('/admin/products/:id', requireAdmin, async (req, res) => {
 // DELETE: Delete product
 router.delete('/admin/products/:id', requireAdmin, async (req, res) => {
     try {
-        await run('DELETE FROM products WHERE id = ?', [req.params.id]);
-        res.json({ success: true, message: 'Product deleted permanently' });
+        if (!/^[A-Za-z0-9_-]{1,64}$/.test(String(req.params.id))) {
+            return res.status(400).json({ success: false, message: 'معرّف المنتج غير صالح' });
+        }
+        await run('UPDATE products SET is_active = 0 WHERE id = ?', [req.params.id]);
+        res.json({ success: true, message: 'Product archived successfully' });
     } catch (err) {
         safeError(res, err);
     }
@@ -779,7 +911,49 @@ router.patch('/admin/orders/:id/status', requireAdmin, async (req, res) => {
             return res.status(400).json({ success: false, message: 'Invalid status' });
         }
 
-        await run('UPDATE orders SET status = ? WHERE id = ?', [status, req.params.id]);
+        const orders = await query('SELECT id, status, payment_method, payment_status, items_json FROM orders WHERE id = ?', [req.params.id]);
+        if (!orders.length) return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
+        const order = orders[0];
+
+        if (status === 'delivered' && order.payment_method === 'card' && order.payment_status !== 'paid') {
+            return res.status(409).json({ success: false, message: 'لا يمكن تسليم طلب بطاقة غير مدفوع' });
+        }
+        if (status === 'shipped' && order.payment_method === 'card' && order.payment_status !== 'paid') {
+            return res.status(409).json({ success: false, message: 'لا يمكن شحن طلب بطاقة غير مدفوع' });
+        }
+        if (order.status === 'cancelled' && status !== 'cancelled') {
+            return res.status(409).json({ success: false, message: 'لا يمكن إعادة فتح طلب ملغى' });
+        }
+        if (status === 'cancelled' && order.payment_status === 'paid') {
+            return res.status(409).json({ success: false, message: 'الطلب المدفوع يحتاج إلى معالجة استرداد قبل الإلغاء' });
+        }
+        if (status === 'cancelled' && order.payment_method === 'card' && order.payment_status === 'pending_payment') {
+            return res.status(409).json({ success: false, message: 'انتظر نتيجة الدفع قبل إلغاء طلب البطاقة' });
+        }
+
+        if (status === 'cancelled' && order.status !== 'cancelled') {
+            db.transaction(() => {
+                db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(status, req.params.id);
+                if (order.payment_method === 'cod' && order.payment_status === 'pending_cod') {
+                    let items = [];
+                    try { items = JSON.parse(order.items_json || '[]'); } catch (_) {}
+                    for (const item of items) {
+                        db.prepare('UPDATE products SET stock = stock + ? WHERE id = ?').run(item.qty, item.id);
+                    }
+                    const reservation = db.prepare(
+                        "SELECT coupon_id FROM coupon_reservations WHERE order_id = ? AND status = 'consumed'"
+                    ).get(req.params.id);
+                    if (reservation) {
+                        db.prepare('UPDATE coupons SET used_count = MAX(0, used_count - 1) WHERE id = ?').run(reservation.coupon_id);
+                        db.prepare("UPDATE coupon_reservations SET status = 'released', updated_at = CURRENT_TIMESTAMP WHERE order_id = ? AND status = 'consumed'").run(req.params.id);
+                    } else {
+                        db.prepare("UPDATE coupon_reservations SET status = 'released', updated_at = CURRENT_TIMESTAMP WHERE order_id = ? AND status = 'reserved'").run(req.params.id);
+                    }
+                }
+            })();
+        } else {
+            await run('UPDATE orders SET status = ? WHERE id = ?', [status, req.params.id]);
+        }
         res.json({ success: true, message: 'Order status updated' });
     } catch (err) {
         safeError(res, err);
@@ -789,8 +963,7 @@ router.patch('/admin/orders/:id/status', requireAdmin, async (req, res) => {
 // Admin Delete Order
 router.delete('/admin/orders/:id', requireAdmin, async (req, res) => {
     try {
-        await run('DELETE FROM orders WHERE id = ?', [req.params.id]);
-        res.json({ success: true, message: 'تم حذف الطلب' });
+        return res.status(405).json({ success: false, message: 'حذف الطلبات المالية غير مسموح؛ استخدم الإلغاء والأرشفة' });
     } catch (err) {
         res.status(500).json({ success: false, message: 'فشل الحذف' });
     }
@@ -859,7 +1032,7 @@ router.post('/customer/register', authLimiter, async (req, res) => {
         `, [cleanName, cleanEmail, password_hash, cleanPhone, cleanCountry, cleanCity, cleanAddress]);
 
         const token = jwt.sign(
-            { id: result.lastID, name: cleanName, email: cleanEmail, role: 'customer' },
+            { id: result.lastID, name: cleanName, email: cleanEmail, role: 'customer', sessionVersion: 0 },
             getJwtSecret(),
             { expiresIn: '30d' }
         );
@@ -867,7 +1040,7 @@ router.post('/customer/register', authLimiter, async (req, res) => {
         res.cookie('lumiere_customer_token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            sameSite: 'strict',
             maxAge: 30 * 24 * 60 * 60 * 1000
         });
 
@@ -910,7 +1083,7 @@ router.post('/customer/login', authLimiter, async (req, res) => {
         }
 
         const token = jwt.sign(
-            { id: cust.id, name: cust.name, email: cust.email, role: 'customer' },
+            { id: cust.id, name: cust.name, email: cust.email, role: 'customer', sessionVersion: Number(cust.session_version || 0) },
             getJwtSecret(),
             { expiresIn: '30d' }
         );
@@ -918,7 +1091,7 @@ router.post('/customer/login', authLimiter, async (req, res) => {
         res.cookie('lumiere_customer_token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            sameSite: 'strict',
             maxAge: 30 * 24 * 60 * 60 * 1000
         });
 
@@ -956,6 +1129,10 @@ router.post('/customer/forgot-password', authLimiter, async (req, res) => {
         if (customers.length === 0) {
             return res.json(generic);
         }
+        if (process.env.NODE_ENV === 'production' && !process.env.SMTP_HOST) {
+            console.warn('[password-reset] SMTP is required in production; refusing to create an undeliverable reset token.');
+            return res.json(generic);
+        }
 
         const rawToken = crypto.randomBytes(32).toString('hex');
         const tokenHash = hashResetToken(rawToken);
@@ -964,7 +1141,10 @@ router.post('/customer/forgot-password', authLimiter, async (req, res) => {
         await run('UPDATE customers SET reset_token_hash = ?, reset_token_expires = ? WHERE id = ?',
             [tokenHash, expires, customers[0].id]);
 
-        const baseUrl = process.env.PUBLIC_URL || `${req.protocol}://${req.get('host')}`;
+        const baseUrl = process.env.PUBLIC_URL
+            ? process.env.PUBLIC_URL.replace(/\/$/, '')
+            : (process.env.NODE_ENV === 'production' ? null : `${req.protocol}://${req.get('host')}`);
+        if (!baseUrl) return res.json(generic);
         const resetUrl = `${baseUrl}/index.html?resetToken=${rawToken}&type=customer`;
         await sendResetEmail(customers[0].email, resetUrl);
 
@@ -992,7 +1172,7 @@ router.post('/customer/reset-password', authLimiter, async (req, res) => {
         }
 
         const newHash = await bcrypt.hash(newPassword, 10);
-        await run('UPDATE customers SET password_hash = ?, reset_token_hash = NULL, reset_token_expires = NULL WHERE id = ?',
+        await run('UPDATE customers SET password_hash = ?, session_version = session_version + 1, reset_token_hash = NULL, reset_token_expires = NULL WHERE id = ?',
             [newHash, customers[0].id]);
 
         res.json({ success: true, message: 'تم تحديث كلمة المرور بنجاح، يمكنك الآن تسجيل الدخول' });
@@ -1054,7 +1234,7 @@ router.post('/customer/google-login', authLimiter, async (req, res) => {
         }
 
         const token = jwt.sign(
-            { id: customer.id, name: customer.name, email: customer.email, role: 'customer' },
+            { id: customer.id, name: customer.name, email: customer.email, role: 'customer', sessionVersion: Number(customer.session_version || 0) },
             getJwtSecret(),
             { expiresIn: '30d' }
         );
@@ -1062,7 +1242,7 @@ router.post('/customer/google-login', authLimiter, async (req, res) => {
         res.cookie('lumiere_customer_token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            sameSite: 'strict',
             maxAge: 30 * 24 * 60 * 60 * 1000
         });
 
@@ -1192,11 +1372,12 @@ router.post('/webhooks/moyasar', async (req, res) => {
         const invoice = await invoiceRes.json();
 
         const newStatus = invoice.status === 'paid' ? 'paid'
-            : (invoice.status === 'failed' || invoice.status === 'canceled' || invoice.status === 'expired') ? 'payment_failed'
+            : (invoice.status === 'failed' || invoice.status === 'canceled' || invoice.status === 'expired' || invoice.status === 'voided') ? 'payment_failed'
+            : invoice.status === 'refunded' ? 'refunded'
             : 'pending_payment';
 
         const orders = await query(
-            'SELECT id, customer_id, items_json, coupon_code, payment_status FROM orders WHERE moyasar_invoice_id = ?',
+            'SELECT id, customer_id, items_json, coupon_code, payment_status, payment_method, total_local, currency, status FROM orders WHERE moyasar_invoice_id = ?',
             [invoiceId]
         );
         if (orders.length === 0) {
@@ -1204,6 +1385,17 @@ router.post('/webhooks/moyasar', async (req, res) => {
         }
 
         const order = orders[0];
+
+        // Never mark an order paid unless the verified invoice belongs to this
+        // exact order and its amount/currency match our server-calculated total.
+        const currencyMinorUnits = order.currency === 'KWD' ? 1000 : 100;
+        const expectedAmount = Math.round(Number(order.total_local) * currencyMinorUnits);
+        if (String(invoice.currency).toUpperCase() !== String(order.currency).toUpperCase() ||
+            Number(invoice.amount) !== expectedAmount) {
+            console.error('[Moyasar Webhook] Invoice amount/currency mismatch for order', order.id);
+            return res.status(409).json({ success: false, message: 'Invoice verification failed' });
+        }
+
         if (newStatus === 'paid') {
             const updated = await run(
                 "UPDATE orders SET payment_status = 'paid' WHERE moyasar_invoice_id = ? AND payment_status != 'paid'",
@@ -1211,7 +1403,24 @@ router.post('/webhooks/moyasar', async (req, res) => {
             );
             if (updated.changes > 0) {
                 if (order.coupon_code) {
-                    await run('UPDATE coupons SET used_count = used_count + 1 WHERE code = ? AND is_active = 1', [order.coupon_code]);
+                    const reservation = await query(
+                        "SELECT coupon_id FROM coupon_reservations WHERE order_id = ? AND status = 'reserved'",
+                        [order.id]
+                    );
+                    if (reservation.length > 0) {
+                        const consumed = await run(
+                            "UPDATE coupons SET used_count = used_count + 1 WHERE id = ? AND is_active = 1 AND (max_uses IS NULL OR used_count < max_uses)",
+                            [reservation[0].coupon_id]
+                        );
+                        if (consumed.changes !== 1) {
+                            console.error('[Moyasar Webhook] Coupon could not be consumed for order', order.id);
+                            return res.status(409).json({ success: false, message: 'Coupon reservation could not be consumed' });
+                        }
+                        await run(
+                            "UPDATE coupon_reservations SET status = 'consumed', updated_at = CURRENT_TIMESTAMP WHERE order_id = ? AND status = 'reserved'",
+                            [order.id]
+                        );
+                    }
                 }
                 if (order.customer_id) {
                     await run('UPDATE customers SET reward_points = reward_points + 10 WHERE id = ?', [order.customer_id]);
@@ -1232,7 +1441,16 @@ router.post('/webhooks/moyasar', async (req, res) => {
                 for (const item of reservedItems) {
                     await run('UPDATE products SET stock = stock + ? WHERE id = ?', [item.qty, item.id]);
                 }
+                await run(
+                    "UPDATE coupon_reservations SET status = 'released', updated_at = CURRENT_TIMESTAMP WHERE order_id = ? AND status = 'reserved'",
+                    [order.id]
+                );
             }
+        } else if (newStatus === 'refunded') {
+            await run(
+                "UPDATE orders SET payment_status = 'refunded' WHERE moyasar_invoice_id = ? AND payment_status = 'paid'",
+                [invoiceId]
+            );
         } else {
             await run('UPDATE orders SET payment_status = ? WHERE moyasar_invoice_id = ?', [newStatus, invoiceId]);
         }

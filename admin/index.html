@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="css/admin.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous" defer></script>
     <style>
         .btn-delete {
             background: rgba(239, 68, 68, 0.15);
@@ -103,7 +103,7 @@
     </div>
 
     <!-- Admin Mobile Sidebar Overlay -->
-    <div id="adminSidebarOverlay" class="admin-sidebar-overlay" onclick="toggleAdminSidebar()"></div>
+    <div id="adminSidebarOverlay" class="admin-sidebar-overlay" data-lumiere-click="toggleAdminSidebar()"></div>
 
     <!-- Sidebar -->
     <aside class="admin-sidebar">
@@ -113,31 +113,31 @@
                     <div class="brand-title">LUMIÈRE</div>
                     <span class="brand-badge">CRUD Operations</span>
                 </div>
-                <button class="sidebar-close-btn" onclick="toggleAdminSidebar()" title="إغلاق القائمة">✕</button>
+                <button class="sidebar-close-btn" data-lumiere-click="toggleAdminSidebar()" title="إغلاق القائمة">✕</button>
             </div>
 
             <ul class="nav-menu">
-                <li class="nav-item active" onclick="switchTab('overview')">
+                <li class="nav-item active" data-lumiere-click="switchTab('overview')">
                     <span class="nav-icon">📊</span>
                     <span>لوحة التحليلات</span>
                 </li>
-                <li class="nav-item" onclick="switchTab('orders')">
+                <li class="nav-item" data-lumiere-click="switchTab('orders')">
                     <span class="nav-icon">📦</span>
                     <span>الطلبات والشحن</span>
                 </li>
-                <li class="nav-item" onclick="switchTab('products')">
+                <li class="nav-item" data-lumiere-click="switchTab('products')">
                     <span class="nav-icon">🧴</span>
                     <span>المنتجات والمخزون</span>
                 </li>
-                <li class="nav-item" onclick="switchTab('coupons')">
+                <li class="nav-item" data-lumiere-click="switchTab('coupons')">
                     <span class="nav-icon">🎟️</span>
                     <span>الكوبونات والخصومات</span>
                 </li>
-                <li class="nav-item" onclick="switchTab('customers')">
+                <li class="nav-item" data-lumiere-click="switchTab('customers')">
                     <span class="nav-icon">👥</span>
                     <span>قاعدة العملاء</span>
                 </li>
-                <li class="nav-item" onclick="switchTab('settings')">
+                <li class="nav-item" data-lumiere-click="switchTab('settings')">
                     <span class="nav-icon">⚙️</span>
                     <span>إعدادات المتجر</span>
                 </li>
@@ -154,8 +154,8 @@
                     </div>
                 </div>
                 <div class="sidebar-user-actions">
-                    <button onclick="openChangePasswordModal()" class="btn-outline-gold" style="padding: 6px 10px; font-size: 0.8rem;">تغيير الرمز 🔑</button>
-                    <button onclick="logoutAdmin()" class="btn-outline-gold" style="padding: 6px 10px; font-size: 0.8rem;">خروج</button>
+                    <button data-lumiere-click="openChangePasswordModal()" class="btn-outline-gold" style="padding: 6px 10px; font-size: 0.8rem;">تغيير الرمز 🔑</button>
+                    <button data-lumiere-click="logoutAdmin()" class="btn-outline-gold" style="padding: 6px 10px; font-size: 0.8rem;">خروج</button>
                 </div>
             </div>
         </div>
@@ -167,7 +167,7 @@
         <!-- Top Bar -->
         <header class="top-bar">
             <div style="display: flex; align-items: center; gap: 14px;">
-                <button class="admin-mobile-toggle" onclick="toggleAdminSidebar()" title="فتح القائمة">☰</button>
+                <button class="admin-mobile-toggle" data-lumiere-click="toggleAdminSidebar()" title="فتح القائمة">☰</button>
                 <div class="page-heading">
                     <h1 id="tabHeading">نظرة عامة والتحليلات الحية</h1>
                     <p id="tabSubHeading">مؤشرات الأداء، التدفق المالي الخليجي والدولي، وحركة الطلبيات</p>
@@ -231,7 +231,7 @@
             <div class="section-card">
                 <div class="section-header">
                     <div class="section-title">أحدث الطلبيات المستلمة</div>
-                    <button onclick="switchTab('orders')" class="btn-outline-gold">عرض جميع الطلبات ➔</button>
+                    <button data-lumiere-click="switchTab('orders')" class="btn-outline-gold">عرض جميع الطلبات ➔</button>
                 </div>
                 <div class="luxury-table-wrapper">
                     <table class="luxury-table">
@@ -262,7 +262,7 @@
                         <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">تحديث حالات الشحن، التواصل مع الزبائن، أو حذف الطلبات التجريبية</p>
                     </div>
                     <div style="display: flex; gap: 12px;">
-                        <button onclick="exportOrdersCSV()" class="btn-outline-gold">تصدير لشركات الشحن (CSV) 📄</button>
+                        <button data-lumiere-click="exportOrdersCSV()" class="btn-outline-gold">تصدير لشركات الشحن (CSV) 📄</button>
                     </div>
                 </div>
 
@@ -297,7 +297,7 @@
                         <div class="section-title">كتالوج المستحضرات والأسعار والمخزون</div>
                         <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">إضافة، تعديل، أو حذف المنتجات من قاعدة البيانات</p>
                     </div>
-                    <button onclick="openNewProductModal()" class="btn-gold">+ إضافة منتج فاخر جديد 🧴</button>
+                    <button data-lumiere-click="openNewProductModal()" class="btn-gold">+ إضافة منتج فاخر جديد 🧴</button>
                 </div>
 
                 <div class="luxury-table-wrapper">
@@ -329,7 +329,7 @@
                         <div class="section-title">إدارة قسائم الخصم الترويجية (Coupons CRUD)</div>
                         <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">إنشاء، تفعيل، تعطيل، أو حذف الكوبونات نهائياً من قاعدة البيانات</p>
                     </div>
-                    <button onclick="openNewCouponModal()" class="btn-gold">+ إضافة كوبون جديد 🎟️</button>
+                    <button data-lumiere-click="openNewCouponModal()" class="btn-gold">+ إضافة كوبون جديد 🎟️</button>
                 </div>
 
                 <div class="luxury-table-wrapper">
@@ -420,7 +420,7 @@
         <div class="modal-box">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                 <h3 class="section-title">إنشاء كوبون خصم جديد</h3>
-                <button onclick="closeNewCouponModal()" style="background:none; border:none; color:var(--text-secondary); font-size:1.5rem; cursor:pointer;">✕</button>
+                <button data-lumiere-click="closeNewCouponModal()" style="background:none; border:none; color:var(--text-secondary); font-size:1.5rem; cursor:pointer;">✕</button>
             </div>
             <form id="newCouponForm">
                 <div class="form-group">
@@ -441,7 +441,7 @@
         <div class="modal-box">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                 <h3 class="section-title">تعديل سعر ومخزون وصورة المستحضر</h3>
-                <button onclick="closeProductModal()" style="background:none; border:none; color:var(--text-secondary); font-size:1.5rem; cursor:pointer;">✕</button>
+                <button data-lumiere-click="closeProductModal()" style="background:none; border:none; color:var(--text-secondary); font-size:1.5rem; cursor:pointer;">✕</button>
             </div>
             <form id="editProductForm">
                 <input type="hidden" id="editProductId">
@@ -485,7 +485,7 @@
         <div class="modal-box" style="max-width: 600px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                 <h3 class="section-title">إضافة مستحضر جديد إلى الكتالوج</h3>
-                <button onclick="closeNewProductModal()" style="background:none; border:none; color:var(--text-secondary); font-size:1.5rem; cursor:pointer;">✕</button>
+                <button data-lumiere-click="closeNewProductModal()" style="background:none; border:none; color:var(--text-secondary); font-size:1.5rem; cursor:pointer;">✕</button>
             </div>
             <form id="newProductForm">
                 <div class="form-group">
@@ -545,7 +545,7 @@
         <div class="modal-box" style="max-width: 440px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                 <h3 class="section-title">تغيير كلمة مرور المدير</h3>
-                <button onclick="closeChangePasswordModal()" style="background:none; border:none; color:var(--text-secondary); font-size:1.5rem; cursor:pointer;">✕</button>
+                <button data-lumiere-click="closeChangePasswordModal()" style="background:none; border:none; color:var(--text-secondary); font-size:1.5rem; cursor:pointer;">✕</button>
             </div>
             <form id="changePasswordForm">
                 <div class="form-group">

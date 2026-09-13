@@ -75,7 +75,8 @@ DATABASE_FILE=./data/lumiere.db
 `;
 
     const envPath = path.resolve(__dirname, '../.env');
-    fs.writeFileSync(envPath, envContent, 'utf8');
+    fs.writeFileSync(envPath, envContent, { encoding: 'utf8', mode: 0o600 });
+    require('dotenv').config({ path: envPath, override: true });
     console.log('✓ Successfully wrote .env configuration file.');
 
     // Run database migrations

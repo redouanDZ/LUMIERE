@@ -24,6 +24,14 @@ const orderLimiter = rateLimit({
     }
 });
 
+const uploadLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: 'تم تجاوز حد رفع الصور. يرجى المحاولة لاحقاً.' }
+});
+
 // General public API limiter
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -39,5 +47,6 @@ const apiLimiter = rateLimit({
 module.exports = {
     authLimiter,
     orderLimiter,
+    uploadLimiter,
     apiLimiter
 };

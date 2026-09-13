@@ -2,17 +2,16 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 
-// Resolve database path dynamically based on environment:
-// 1. Explicit DB_PATH (e.g., data/test.db or :memory:)
-// 2. Automated test environment (NODE_ENV=test) -> data/test.db
-// 3. Default production / development database -> data/lumiere.db
+// Resolve database path from one canonical environment variable.
+// Tests use an isolated in-memory database unless explicitly overridden.
 const getDbPath = () => {
     if (process.env.DB_PATH) {
         return process.env.DB_PATH === ':memory:' ? ':memory:' : path.resolve(process.env.DB_PATH);
     }
-    if (process.env.NODE_ENV === 'test') {
-        return path.resolve(__dirname, '../../data/test.db');
+    if (process.env.DATABASE_FILE) {
+        return process.env.DATABASE_FILE === ':memory:' ? ':memory:' : path.resolve(process.env.DATABASE_FILE);
     }
+    if (process.env.NODE_ENV === 'test') return ':memory:';
     return path.resolve(__dirname, '../../data/lumiere.db');
 };
 

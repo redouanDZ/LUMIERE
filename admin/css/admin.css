@@ -712,3 +712,69 @@ body {
         font-size: 2rem !important;
     }
 }
+
+/* LUMIÈRE 1.0.2 — ADMIN MOBILE POLISH */
+@media (max-width: 768px) {
+    .admin-mobile-toggle,
+    .sidebar-close-btn {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    .admin-main {
+        width: 100%;
+        overflow-x: hidden;
+    }
+
+    .luxury-table-wrapper {
+        border: 1px solid rgba(197, 160, 89, 0.16);
+        border-radius: 12px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+
+    .luxury-table th,
+    .luxury-table td {
+        min-height: 44px;
+    }
+
+    .form-control,
+    .status-select {
+        min-height: 46px;
+        font-size: 16px;
+    }
+
+    .btn-gold,
+    .btn-outline-gold {
+        min-height: 44px;
+    }
+
+    .modal-overlay {
+        padding: 0;
+        align-items: flex-end;
+    }
+
+    .modal-box {
+        width: 100%;
+        max-width: 100% !important;
+        max-height: 92vh;
+        border-radius: 20px 20px 0 0;
+        padding: 24px 16px calc(22px + env(safe-area-inset-bottom, 0px));
+    }
+}
+
+@media (max-width: 480px) {
+    .section-header {
+        align-items: flex-start;
+    }
+
+    .settings-actions {
+        align-items: stretch;
+    }
+
+    .settings-actions > * {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
