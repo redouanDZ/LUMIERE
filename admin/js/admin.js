@@ -719,50 +719,85 @@ function initCharts(data) {
     if (revenueChart) revenueChart.destroy();
     if (countryChart) countryChart.destroy();
 
-    const revCtx = document.getElementById('revenueChart').getContext('2d');
-    revenueChart = new Chart(revCtx, {
-        type: 'line',
-        data: {
-            labels: ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'],
-            datasets: [{
-                label: 'الإيرادات اليومية (SAR)',
-                data: [1200, 1950, 2400, 1800, 3100, 4200, 3800],
-                borderColor: '#C5A059',
-                backgroundColor: 'rgba(197, 160, 89, 0.1)',
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } },
-                y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } }
-            }
-        }
-    });
+    const revChartEl = document.getElementById('revenueChart');
+    const cntChartEl = document.getElementById('countryChart');
+    
+    const revContainer = revChartEl ? revChartEl.parentElement : document.querySelector('#tab-overview .charts-grid .section-card:nth-child(1) > div:nth-child(2)');
+    const cntContainer = cntChartEl ? cntChartEl.parentElement : document.querySelector('#tab-overview .charts-grid .section-card:nth-child(2) > div:nth-child(2)');
 
-    const cntCtx = document.getElementById('countryChart').getContext('2d');
-    countryChart = new Chart(cntCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['السعودية 🇸🇦', 'الإمارات 🇦🇪', 'الكويت 🇰🇼', 'قطر 🇶🇦', 'أخرى 🌍'],
-            datasets: [{
-                data: [55, 25, 10, 6, 4],
-                backgroundColor: ['#C5A059', '#E8CF96', '#967027', '#6B501B', '#3E3422'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'bottom', labels: { color: '#A8A29E', font: { size: 11 } } }
-            }
+    if (!data.dailySales || data.dailySales.length === 0) {
+        if (revContainer) {
+            revContainer.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:var(--text-secondary);font-size:1.1rem;font-weight:bold;">لا توجد بيانات مبيعات بعد</div>';
         }
-    });
+    } else {
+        if (revContainer) {
+            revContainer.innerHTML = '<canvas id="revenueChart"></canvas>';
+            const revCtx = document.getElementById('revenueChart').getContext('2d');
+            
+            const labels = data.dailySales.map(d => {
+                const date = new Date(d.date);
+                return date.toLocaleDateString('ar-SA', { weekday: 'short', month: 'numeric', day: 'numeric' });
+            });
+            const values = data.dailySales.map(d => d.revenue);
+
+            revenueChart = new Chart(revCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'الإيرادات اليومية (SAR)',
+                        data: values,
+                        borderColor: '#C5A059',
+                        backgroundColor: 'rgba(197, 160, 89, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } }
+                    }
+                }
+            });
+        }
+    }
+
+    if (!data.countryStats || data.countryStats.length === 0) {
+        if (cntContainer) {
+            cntContainer.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100%;color:var(--text-secondary);font-size:1.1rem;font-weight:bold;">لا توجد بيانات جغرافية بعد</div>';
+        }
+    } else {
+        if (cntContainer) {
+            cntContainer.innerHTML = '<canvas id="countryChart"></canvas>';
+            const cntCtx = document.getElementById('countryChart').getContext('2d');
+            
+            const labels = data.countryStats.map(c => c.country || 'أخرى');
+            const values = data.countryStats.map(c => c.count);
+
+            countryChart = new Chart(cntCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: ['#C5A059', '#E8CF96', '#967027', '#6B501B', '#3E3422'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#A8A29E', font: { size: 11 } } }
+                    }
+                }
+            });
+        }
+    }
 }
 
 function getStatusLabel(s) {

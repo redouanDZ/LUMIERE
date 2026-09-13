@@ -525,6 +525,15 @@ router.get('/admin/stats', requireAdmin, async (req, res) => {
             FROM orders ${paidOrderFilter} GROUP BY customer_country ORDER BY count DESC LIMIT 5
         `);
 
+        const dailySales = await query(`
+            SELECT DATE(created_at) as date, SUM(total_local) as revenue
+            FROM orders
+            ${paidOrderFilter}
+            AND created_at >= date('now', '-6 days')
+            GROUP BY DATE(created_at)
+            ORDER BY DATE(created_at) ASC
+        `);
+
         const customersList = await query(`
             SELECT c.id, c.name, c.phone, c.city, c.country, 
                    COUNT(CASE WHEN o.payment_status IN ('paid', 'pending_cod') AND o.status != 'cancelled' THEN o.id END) as total_orders,
@@ -546,6 +555,7 @@ router.get('/admin/stats', requireAdmin, async (req, res) => {
                 totalCoupons: couponsCount[0].count || 0
             },
             countryStats,
+            dailySales,
             customers: customersList,
             recentOrders: ordersList.map(o => ({
                 ...o,
