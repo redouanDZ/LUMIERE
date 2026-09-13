@@ -1253,7 +1253,7 @@ body {
 }
 
 @media (max-width: 768px) {
-    .nav-links { display: none; }
+    /* .nav-links { display: none; } Moved to 1200px breakpoint */
     .hero-title { font-size: 2.4rem; }
     .products-grid { max-width: 440px; margin-inline: auto; }
     .footer-bottom { flex-direction: column; gap: 12px; text-align: center; }
@@ -1377,13 +1377,17 @@ body {
 }
 
 /* RESPONSIVE BREAKPOINTS */
-@media (max-width: 992px) {
-    .header-container nav {
+@media (max-width: 1200px) {
+    .header-container nav,
+    .nav-links {
         display: none;
     }
     .mobile-menu-btn {
         display: block;
     }
+}
+
+@media (max-width: 992px) {
     .hero-grid {
         grid-template-columns: 1fr;
         text-align: center;
