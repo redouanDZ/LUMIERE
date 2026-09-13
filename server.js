@@ -32,7 +32,7 @@ app.use(helmet({
 // CORS Configuration: Restrict to explicit allowed origins
 const allowedOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim()).filter(Boolean)
-    : ['http://localhost:4000', 'http://127.0.0.1:4000'];
+    : ['http://localhost:4000', 'http://127.0.0.1:4000', 'https://lumiere-v1-0-0.onrender.com'];
 
 app.use(cors({
     origin: (origin, callback) => {
