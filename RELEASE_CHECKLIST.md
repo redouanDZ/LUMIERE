@@ -1,4 +1,4 @@
-# LUMIÈRE V1.0.1 Release Checklist
+# LUMIÈRE V1.0.4 Release Checklist
 
 ## Local
 ```bash
@@ -45,3 +45,12 @@ Do not commit or upload:
 - `data/*.db*`
 - customer/order exports
 - production secrets
+
+
+## Responsive acceptance checks
+- 993px: compact header remains balanced; no horizontal overflow.
+- 1024px: hero, benefits and three-column products remain aligned.
+- 1100px: compact header and storefront content remain visually coherent.
+- 1200px: full desktop navigation and three-column products remain balanced.
+- 375px: single-column product cards, readable typography, touch-friendly actions.
+- 320–360px: no compressed product grid or toast/bottom-navigation collision.

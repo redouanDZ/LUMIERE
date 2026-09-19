@@ -1,4 +1,12 @@
-# LUMIÈRE V1.0.1 — Hardening Changelog
+# LUMIÈRE — Hardening Changelog
+
+## 1.0.4 — Picalica Mobile Final Polish
+
+- Locked the storefront product grid to a single readable column at `480px` and below.
+- Added narrow-phone spacing and image sizing refinements for `360px` and below.
+- Kept filter pills horizontally scrollable without compressing labels.
+- Increased separation between the social-proof toast and the mobile bottom navigation, including safe-area spacing.
+- Preserved the validated `993–1200px` header/content behavior from 1.0.3.
 
 ## Security
 - Removed secrets and local customer/order database artifacts from the release package.
@@ -30,6 +38,15 @@
 ## Validation
 - JavaScript syntax check passes for all project `.js` files.
 - Full Jest execution was not possible in this environment because dependency installation timed out; run `npm ci` and `npm test` locally/CI before production deployment.
+
+## 1.0.3 — Picalica Responsive & Release Polish
+
+- Reworked the primary storefront header breakpoint from `1350px` to `1120px` so the desktop navigation remains available on compact desktop widths while switching cleanly before tablet/landscape widths can create crowding.
+- Removed a redundant `769–1100px` header rule that was unreachable after the previous `1350px` mobile-header breakpoint.
+- Synchronized runtime/package documentation around Node.js `22.x`.
+- Updated the Docker runtime and builder images to Node.js `22-alpine` to match the declared engine.
+- Synchronized release metadata to version `1.0.3`.
+- Prepared the release specifically around Picalica's responsive, compatibility, documentation, and final pre-submission quality requirements.
 
 ## 1.0.2 — Premium Responsive UX Polish
 

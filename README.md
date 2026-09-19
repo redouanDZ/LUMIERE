@@ -29,8 +29,8 @@ Production-focused, ultra-luxury Clean Skincare & Beauty e-commerce full-stack p
 ## 🛠️ Installation & Setup Guide
 
 ### 1. Prerequisites
-- **Node.js**: v18.0.0 or higher
-- **npm**: v9.0.0 or higher
+- **Node.js**: v22.x
+- **npm**: v10.0.0 or higher
 
 ### 2. Clone Repository
 ```bash

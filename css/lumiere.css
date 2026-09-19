@@ -1387,7 +1387,9 @@ body {
 }
 
 /* RESPONSIVE BREAKPOINTS */
-@media (max-width: 1350px) {
+/* Keep the full desktop navigation available on wide screens while switching
+   before tablet/compact-desktop widths can cause header crowding. */
+@media (max-width: 1120px) {
     .header-container nav,
     .nav-links {
         display: none;
@@ -1730,7 +1732,7 @@ textarea {
 }
 
 /* ==========================================
-   LUMIÈRE 1.0.2 — PREMIUM RESPONSIVE POLISH
+   LUMIÈRE 1.0.3 — PICALICA RESPONSIVE POLISH
    ========================================== */
 
 :root {
@@ -1788,26 +1790,6 @@ textarea:focus-visible {
 .btn-outline-gold,
 .btn-apply-coupon {
     min-height: 44px;
-}
-
-/* Keep the desktop header compact before switching to the mobile navigation. */
-@media (max-width: 1100px) and (min-width: 769px) {
-    .header-container {
-        padding-inline: 18px;
-        gap: 12px;
-    }
-
-    .header-controls {
-        flex-wrap: nowrap;
-    }
-
-    .logo-text {
-        font-size: 1.75rem;
-    }
-
-    .nav-links {
-        gap: 10px;
-    }
 }
 
 @media (max-width: 768px) {
@@ -2137,6 +2119,64 @@ textarea:focus-visible {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+    }
+}
+
+/* 1.0.4 — Picalica mobile final polish
+   Keep the storefront intentionally simple and readable on narrow phones. */
+@media (max-width: 480px) {
+    .products-grid {
+        grid-template-columns: minmax(0, 1fr);
+        width: min(100%, 380px);
+        margin-inline: auto;
+        gap: 14px;
+    }
+
+    .products-section .filter-pills {
+        max-width: 100%;
+        padding-bottom: 4px;
+    }
+
+    .products-section .filter-pills .filter-btn {
+        flex: 0 0 auto;
+        min-height: 40px;
+    }
+
+    .product-card {
+        min-width: 0;
+    }
+
+    .product-image-wrap {
+        height: clamp(210px, 62vw, 250px);
+    }
+
+    .social-proof-toast {
+        bottom: calc(var(--mobile-nav-height) + 16px + env(safe-area-inset-bottom, 0px));
+        max-width: min(360px, calc(100vw - 20px));
+        margin-inline: auto;
+    }
+}
+
+@media (max-width: 360px) {
+    .products-grid {
+        width: 100%;
+        gap: 12px;
+    }
+
+    .product-card {
+        padding: 9px;
+    }
+
+    .product-image-wrap {
+        height: 205px;
+    }
+
+    .product-actions {
+        gap: 6px;
+    }
+
+    .product-actions > * {
+        min-width: 0;
     }
 }
 
