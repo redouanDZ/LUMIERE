@@ -778,3 +778,91 @@ body {
     }
 }
 
+
+
+/* 1.0.5 — Admin internal-flow responsive polish */
+.admin-mobile-toggle,
+.sidebar-close-btn,
+.sidebar-user-actions button,
+.luxury-table button,
+.luxury-table select {
+    touch-action: manipulation;
+}
+
+.luxury-table-wrapper {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+}
+
+.luxury-table {
+    min-width: 720px;
+}
+
+.settings-textarea {
+    min-height: 140px;
+    resize: vertical;
+}
+
+@media (max-width: 768px) {
+    .section-card {
+        padding: 20px 16px;
+        margin-bottom: 20px;
+    }
+
+    .section-header {
+        align-items: flex-start;
+    }
+
+    .luxury-table-wrapper {
+        margin-inline: -2px;
+        border-radius: 12px;
+    }
+
+    .luxury-table {
+        min-width: 680px;
+    }
+
+    .luxury-table th,
+    .luxury-table td {
+        padding: 11px 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .section-card {
+        padding: 16px 12px;
+        border-radius: 14px;
+    }
+
+    .page-heading h1 {
+        font-size: 1.55rem;
+    }
+
+    .page-heading p {
+        line-height: 1.6;
+    }
+
+    .luxury-table {
+        min-width: 640px;
+    }
+
+    #loginScreen > div {
+        max-height: calc(100vh - 28px);
+        overflow-y: auto;
+    }
+}
+
+@media (max-width: 360px) {
+    .admin-main {
+        padding-inline: 10px;
+    }
+
+    .section-card {
+        padding-inline: 10px;
+    }
+
+    .brand-title {
+        font-size: 1.45rem;
+    }
+}

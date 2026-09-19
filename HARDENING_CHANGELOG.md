@@ -1,3 +1,16 @@
+# LUMIÈRE Hardening & Release Changelog
+
+## 1.0.5 — Internal Storefront UX Polish
+
+- Improved customer account/login/register modal behavior on tablets and phones.
+- Increased account-flow form and action touch targets for mobile usability.
+- Improved customer profile/order-history wrapping on narrow screens.
+- Improved quick-view image sizing and product-detail tabs on small screens.
+- Preserved the validated 993–1200px storefront header/content behavior.
+- Improved checkout form control sizing and spacing on narrow screens.
+- Added admin table minimum widths and stronger horizontal-scroll behavior for mobile data tables.
+- Improved admin section-card spacing and login-panel behavior on narrow screens.
+
 # LUMIÈRE — Hardening Changelog
 
 ## 1.0.4 — Picalica Mobile Final Polish

@@ -1,4 +1,4 @@
-# LUMIÈRE Security Notes — V1.0.3
+# LUMIÈRE Security Notes — V1.0.5
 
 ## Completed hardening
 

@@ -2180,3 +2180,153 @@ textarea:focus-visible {
     }
 }
 
+
+
+/* 1.0.5 — Internal storefront UX polish
+   Keep product discovery, cart, checkout and account flows comfortable on touch devices. */
+.qv-tab-btn {
+    min-height: 42px;
+    white-space: nowrap;
+}
+
+#customerModal .modal-box {
+    position: relative;
+    width: min(520px, 100%);
+    max-height: min(90vh, 760px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+#customerModal .form-input,
+#customerModal .form-select {
+    min-height: 46px;
+}
+
+#customerModal button,
+#customerModal a {
+    touch-action: manipulation;
+}
+
+#customerProfileView #customerOrdersList {
+    scrollbar-width: thin;
+}
+
+@media (max-width: 768px) {
+    #customerModal .modal-box {
+        max-height: 94vh;
+    }
+
+    #customerModal .modal-box > div:first-child {
+        padding-top: 4px;
+    }
+
+    #customerModal #customerAuthView > div:first-child {
+        margin-bottom: 16px !important;
+    }
+
+    #customerModal #customerAuthView > div:nth-child(2) {
+        margin-bottom: 16px !important;
+    }
+
+    #customerModal .qv-tab-btn,
+    #customerModal .btn-luxury,
+    #customerModal .btn-outline {
+        min-height: 46px;
+    }
+
+    #customerProfileView > div:first-child {
+        align-items: flex-start;
+        gap: 14px;
+        flex-wrap: wrap;
+    }
+
+    #customerOrdersList {
+        max-height: 260px !important;
+    }
+
+    .quickview-modal .qv-grid {
+        gap: 18px;
+    }
+
+    .quickview-modal .qv-grid > div:first-child {
+        max-width: 420px;
+        width: 100%;
+        margin-inline: auto;
+    }
+
+    .quickview-modal .qv-tab-btn {
+        padding-inline: 10px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    #customerModal .modal-box {
+        padding: 28px 14px calc(20px + env(safe-area-inset-bottom, 0px));
+    }
+
+    #customerModal .modal-box > button:first-child {
+        top: 8px !important;
+        inset-inline-end: 8px !important;
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    #customerModal #customerAuthView > div:first-child div:first-child {
+        font-size: 1.9rem !important;
+    }
+
+    #customerModal #customerAuthView form {
+        max-width: 100%;
+    }
+
+    #customerProfileView > div:first-child > div:last-child {
+        width: 100%;
+    }
+
+    #customerProfileView > div:last-child {
+        flex-direction: column;
+    }
+
+    #customerProfileView > div:last-child > * {
+        width: 100%;
+        min-height: 46px;
+    }
+
+    .quickview-modal .qv-grid > div:first-child {
+        max-width: 340px;
+    }
+
+    .quickview-modal .qv-tab-btn {
+        min-height: 44px;
+        padding-inline: 9px !important;
+        font-size: 0.82rem;
+    }
+
+    .checkout-modal .form-group {
+        margin-bottom: 14px;
+    }
+
+    .checkout-modal .form-label {
+        font-size: 0.82rem;
+    }
+
+    .checkout-modal .form-input,
+    .checkout-modal .form-select {
+        min-height: 48px;
+    }
+}
+
+@media (max-width: 360px) {
+    #customerModal .modal-box {
+        padding-inline: 12px;
+    }
+
+    #customerModal #customerAuthView > div:nth-child(2) button {
+        font-size: 0.82rem;
+    }
+
+    .quickview-modal .qv-tab-btn {
+        font-size: 0.76rem;
+        padding-inline: 7px !important;
+    }
+}
