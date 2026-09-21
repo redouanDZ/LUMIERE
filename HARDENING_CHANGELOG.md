@@ -1,4 +1,17 @@
+## 1.0.9 — Admin Order Status Fix
+- Fixed delegated event argument parsing for `this.value` / `this.checked`, restoring admin order status updates.
+
 # LUMIÈRE Hardening & Release Changelog
+
+## 1.0.9 — Cart & Express Checkout Reliability
+
+- Fixed delegated cart quantity parsing for negative values so the decrease button works reliably.
+- Fixed delegated argument parsing order for `this.value` / `this.checked`.
+- Reworked cart quantity controls with dedicated classes and 40px touch targets.
+- Improved cart item wrapping and quantity-control layout on narrow phones.
+- Preserved the validated 993–1200px responsive header behavior.
+- Preserved existing cart, coupon, stock-reservation, checkout, authentication, and payment hardening.
+
 
 ## 1.0.5 — Internal Storefront UX Polish
 

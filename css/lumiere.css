@@ -2330,3 +2330,61 @@ textarea:focus-visible {
         padding-inline: 7px !important;
     }
 }
+
+
+/* 1.0.6 — Cart interaction reliability & mobile checkout polish */
+.cart-item-quantity {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+}
+
+.cart-qty-btn,
+.cart-remove-btn {
+    min-width: 40px;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+}
+
+.cart-remove-btn {
+    min-width: 40px;
+    border: none;
+    background: transparent;
+    color: #ef4444;
+}
+
+@media (max-width: 520px) {
+    .cart-item {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .cart-item-info {
+        min-width: 0;
+        flex: 1 1 calc(100% - 84px);
+    }
+
+    .cart-item-info h4 {
+        overflow-wrap: anywhere;
+    }
+
+    .cart-item-quantity {
+        width: 100%;
+        justify-content: flex-start;
+        padding-inline-start: 84px;
+    }
+
+    .cart-drawer .btn-checkout {
+        min-height: 48px;
+    }
+}
+
+@media (max-width: 380px) {
+    .cart-item-quantity {
+        padding-inline-start: 0;
+    }
+}

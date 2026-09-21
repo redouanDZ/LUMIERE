@@ -890,7 +890,7 @@ initDashboard();
 
     const parseArgs = (raw, element, event) => {
         const args = [];
-        const re = /'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|\\b(?:this|event)\\b|-?\\d+(?:\\.\\d+)?/g;
+        const re = /'(?:\'|[^'])*'|"(?:\"|[^"])*"|(?:this\.(?:value|checked)|this|event)|-?\d+(?:\.\d+)?/g;
         let match;
         while ((match = re.exec(raw || ''))) {
             const token = match[0];

@@ -1,4 +1,4 @@
-# LUMIÈRE V1.0.5 Release Checklist
+# LUMIÈRE V1.0.9 Release Checklist
 
 ## Local
 ```bash

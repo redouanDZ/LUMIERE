@@ -1026,10 +1026,23 @@ router.post('/customer/register', authLimiter, async (req, res) => {
         }
 
         const password_hash = await bcrypt.hash(password, 10);
-        const result = await run(`
-            INSERT INTO customers (name, email, password_hash, phone, country, city, address, reward_points)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 100)
-        `, [cleanName, cleanEmail, password_hash, cleanPhone, cleanCountry, cleanCity, cleanAddress]);
+        let result;
+        try {
+            result = await run(`
+                INSERT INTO customers (name, email, password_hash, phone, country, city, address, reward_points)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 100)
+            `, [cleanName, cleanEmail, password_hash, cleanPhone, cleanCountry, cleanCity, cleanAddress]);
+        } catch (insertErr) {
+            // Handle a race condition where another request registers the same email
+            // between the duplicate check above and this INSERT.
+            if (insertErr?.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'هذا البريد الإلكتروني مسجل بالفعل'
+                });
+            }
+            throw insertErr;
+        }
 
         const token = jwt.sign(
             { id: result.lastID, name: cleanName, email: cleanEmail, role: 'customer', sessionVersion: 0 },

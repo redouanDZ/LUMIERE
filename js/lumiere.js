@@ -594,7 +594,17 @@ function addToCart(productId) {
 }
 
 function quickBuy(productId) {
-    addToCart(productId);
+    const prod = PRODUCTS.find(p => p.id === productId);
+    if (!prod) return;
+
+    activeBundle = false;
+    const existing = cart.find(item => item.id === productId);
+    if (!existing) {
+        cart.push({ ...prod, qty: 1 });
+    }
+
+    saveCart();
+    renderCart();
     closeCartDrawer();
     openCheckoutModal();
 }
@@ -639,11 +649,11 @@ function renderCart() {
                 <h4>${item.title[currentLang]}</h4>
                 <div class="cart-item-price">${formatPrice(item.basePriceUsd)} × ${item.qty}</div>
             </div>
-            <div style="display: flex; gap: 8px; align-items: center;">
-                <button data-lumiere-click="changeQty(${idx}, -1)" style="border: 1px solid #ddd; background: #fff; width: 26px; height: 26px; border-radius: 50%; cursor: pointer;">-</button>
-                <span style="font-weight: 600;">${item.qty}</span>
-                <button data-lumiere-click="changeQty(${idx}, 1)" style="border: 1px solid #ddd; background: #fff; width: 26px; height: 26px; border-radius: 50%; cursor: pointer;">+</button>
-                <button data-lumiere-click="removeFromCart(${idx})" style="border: none; background: transparent; color: #ef4444; font-size: 1.1rem; cursor: pointer; margin-inline-start: 6px;">✕</button>
+            <div class="cart-item-quantity">
+                <button type="button" class="cart-qty-btn" data-lumiere-click="changeQty(${idx}, -1)" aria-label="Decrease quantity">−</button>
+                <span style="font-weight: 600; min-width: 24px; text-align: center;">${item.qty}</span>
+                <button type="button" class="cart-qty-btn" data-lumiere-click="changeQty(${idx}, 1)" aria-label="Increase quantity">+</button>
+                <button type="button" class="cart-remove-btn" data-lumiere-click="removeFromCart(${idx})" aria-label="Remove item">✕</button>
             </div>
         </div>
     `).join('');
@@ -1202,8 +1212,12 @@ async function handleCustomerLogin(e) {
 }
 
 // Handle Customer Register
+let customerRegisterInProgress = false;
+
 async function handleCustomerRegister(e) {
     if (e) e.preventDefault();
+    if (customerRegisterInProgress) return false;
+    customerRegisterInProgress = true;
     const nameInput = document.getElementById('custRegName');
     const emailInput = document.getElementById('custRegEmail');
     const phoneInput = document.getElementById('custRegPhone');
@@ -1246,6 +1260,8 @@ async function handleCustomerRegister(e) {
             msg.style.color = '#DC2626';
             msg.textContent = 'حدث خطأ أثناء إنشاء الحساب';
         }
+    } finally {
+        customerRegisterInProgress = false;
     }
     return false;
 }
@@ -1340,7 +1356,7 @@ window.updateCartUI = renderCart;
         'closeProductModal','closeQuickView','deleteOrder','deleteProduct','exportOrdersCSV',
         'filterCategory','handleCustomerForgotPassword','handleCustomerLogin','handleCustomerRegister',
         'handleCustomerResetPassword','handleDeleteCouponClick','handleEditProductClick','logoutAdmin',
-        'logoutCustomer','openCartDrawer','openChangePasswordModal','openNewCouponModal',
+        'logoutCustomer','openCartDrawer','openCheckoutModal','openChangePasswordModal','openNewCouponModal',
         'openNewProductModal','openQuickBuy','openCustomerAuthModal','openQuickView','quickBuy',
         'quickBuyBundle','removeFromCart','switchAuthMode','switchTab','toggleAdminSidebar',
         'toggleCoupon','toggleFaq','toggleMobileNav','updateOrderStatus'
@@ -1348,13 +1364,13 @@ window.updateCartUI = renderCart;
 
     const parseArgs = (raw, element, event) => {
         const args = [];
-        const re = /'(?:\\'|[^'])*'|"(?:\\"|[^"])*"|\\b(?:this|event)\\b|-?\\d+(?:\\.\\d+)?/g;
+        const re = /'(?:\'|[^'])*'|"(?:\"|[^"])*"|\bthis\.(?:value|checked)\b|\b(?:this|event)\b|-?\d+(?:\.\d+)?/g;
         let match;
         while ((match = re.exec(raw || ''))) {
             const token = match[0];
-            if (token === 'this') args.push(element);
-            else if (token === 'this.value') args.push(element.value);
+            if (token === 'this.value') args.push(element.value);
             else if (token === 'this.checked') args.push(element.checked);
+            else if (token === 'this') args.push(element);
             else if (token === 'event') args.push(event);
             else if ((token[0] === "'" && token[token.length - 1] === "'") ||
                      (token[0] === '"' && token[token.length - 1] === '"')) {
