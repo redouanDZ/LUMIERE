@@ -1,6 +1,6 @@
 {
   "name": "lumiere-botanics",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "LUMIÈRE Botanics — High-End Clean Skincare & Beauty E-Commerce API & Platform",
   "main": "server.js",
   "engines": {

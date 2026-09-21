@@ -626,7 +626,9 @@ function renderCart() {
     const itemsContainer = document.getElementById('cartDrawerItems');
     const totalEl = document.getElementById('cartDrawerTotal');
 
-    const totalCount = cart.reduce((sum, item) => sum + item.qty, 0);
+    // A full collection is presented as one bundle in the cart badge,
+    // while the cart still keeps all products as separate line items.
+    const totalCount = activeBundle ? 1 : cart.reduce((sum, item) => sum + item.qty, 0);
     if (countEl) countEl.textContent = totalCount;
     const mobileBadge = document.getElementById('mobileCartBadge');
     if (mobileBadge) mobileBadge.textContent = totalCount;

@@ -1,3 +1,8 @@
+## V1.0.10 — Bundle Cart Badge UX Fix
+
+- Full collection is displayed as **1 bundle** in the cart badge while preserving the 3 underlying product line items for order processing.
+- Mobile and desktop cart badges use the same bundle-aware count.
+
 # LUMIÈRE V1.0.9 Release Checklist
 
 ## Local
