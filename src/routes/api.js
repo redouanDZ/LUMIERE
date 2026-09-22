@@ -149,7 +149,7 @@ router.get('/products', async (req, res) => {
 // GET Single Product
 router.get('/products/:id', async (req, res) => {
     try {
-        const product = await query('SELECT * FROM products WHERE id = ?', [req.params.id]);
+        const product = await query('SELECT * FROM products WHERE id = ? AND is_active = 1', [req.params.id]);
         if (product.length === 0) {
             return res.status(404).json({ success: false, message: 'Product not found' });
         }
@@ -377,19 +377,21 @@ router.post('/orders', orderLimiter, validateOrderInput, async (req, res) => {
 
         let paymentUrl = null;
 
+        const rollbackOrder = db.transaction(() => {
+            const current = db.prepare('SELECT items_json FROM orders WHERE id = ?').get(order.orderId);
+            let reservedItems = [];
+            try { reservedItems = JSON.parse(current?.items_json || '[]'); } catch (_) { }
+            for (const item of reservedItems) {
+                db.prepare('UPDATE products SET stock = stock + ? WHERE id = ?').run(item.qty, item.id);
+            }
+            db.prepare('DELETE FROM coupon_reservations WHERE order_id = ?').run(order.orderId);
+            db.prepare('DELETE FROM orders WHERE id = ?').run(order.orderId);
+        });
+
         if (paymentMethod === 'card') {
             if (!process.env.PUBLIC_URL) {
                 // Compensating transaction: release stock and delete the pending order.
-                db.transaction(() => {
-                    const current = db.prepare('SELECT items_json FROM orders WHERE id = ?').get(order.orderId);
-                    let reservedItems = [];
-                    try { reservedItems = JSON.parse(current?.items_json || '[]'); } catch (_) {}
-                    for (const item of reservedItems) {
-                        db.prepare('UPDATE products SET stock = stock + ? WHERE id = ?').run(item.qty, item.id);
-                    }
-                    db.prepare('DELETE FROM coupon_reservations WHERE order_id = ?').run(order.orderId);
-                    db.prepare('DELETE FROM orders WHERE id = ?').run(order.orderId);
-                })();
+                rollbackOrder();
                 return res.status(503).json({ success: false, message: 'إعداد PUBLIC_URL مطلوب لتفعيل الدفع بالبطاقة في الإنتاج' });
             }
 
@@ -431,16 +433,7 @@ router.post('/orders', orderLimiter, validateOrderInput, async (req, res) => {
 
                 // Release reserved stock and coupon reservation so a failed
                 // payment initialization never strands inventory.
-                db.transaction(() => {
-                    const current = db.prepare('SELECT items_json FROM orders WHERE id = ?').get(order.orderId);
-                    let reservedItems = [];
-                    try { reservedItems = JSON.parse(current?.items_json || '[]'); } catch (_) {}
-                    for (const item of reservedItems) {
-                        db.prepare('UPDATE products SET stock = stock + ? WHERE id = ?').run(item.qty, item.id);
-                    }
-                    db.prepare('DELETE FROM coupon_reservations WHERE order_id = ?').run(order.orderId);
-                    db.prepare('DELETE FROM orders WHERE id = ?').run(order.orderId);
-                })();
+                rollbackOrder();
 
                 return res.status(502).json({
                     success: false,
@@ -570,7 +563,7 @@ router.post('/auth/forgot-password', authLimiter, async (req, res) => {
 
         const rawToken = crypto.randomBytes(32).toString('hex');
         const tokenHash = hashResetToken(rawToken);
-        const expires = new Date(Date.now() + RESET_TOKEN_TTL_MS).toISOString();
+        const expires = new Date(Date.now() + RESET_TOKEN_TTL_MS).toISOString().replace('T', ' ').substring(0, 19);
 
         await run('UPDATE users SET reset_token_hash = ?, reset_token_expires = ? WHERE id = ?',
             [tokenHash, expires, users[0].id]);
@@ -821,7 +814,7 @@ router.post('/admin/upload-image', requireAdmin, uploadLimiter, async (req, res)
 
         // Validate image signatures instead of trusting the client MIME type.
         const isJpeg = buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
-        const isPng = buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10]));
+        const isPng = buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
         const isWebp = buffer.length >= 12 && buffer.subarray(0, 4).toString('ascii') === 'RIFF' && buffer.subarray(8, 12).toString('ascii') === 'WEBP';
         if (!isJpeg && !isPng && !isWebp) {
             return res.status(400).json({ success: false, message: 'محتوى الصورة غير صالح' });
@@ -936,7 +929,7 @@ router.patch('/admin/orders/:id/status', requireAdmin, async (req, res) => {
                 db.prepare('UPDATE orders SET status = ? WHERE id = ?').run(status, req.params.id);
                 if (order.payment_method === 'cod' && order.payment_status === 'pending_cod') {
                     let items = [];
-                    try { items = JSON.parse(order.items_json || '[]'); } catch (_) {}
+                    try { items = JSON.parse(order.items_json || '[]'); } catch (_) { }
                     for (const item of items) {
                         db.prepare('UPDATE products SET stock = stock + ? WHERE id = ?').run(item.qty, item.id);
                     }
@@ -1386,8 +1379,8 @@ router.post('/webhooks/moyasar', async (req, res) => {
 
         const newStatus = invoice.status === 'paid' ? 'paid'
             : (invoice.status === 'failed' || invoice.status === 'canceled' || invoice.status === 'expired' || invoice.status === 'voided') ? 'payment_failed'
-            : invoice.status === 'refunded' ? 'refunded'
-            : 'pending_payment';
+                : invoice.status === 'refunded' ? 'refunded'
+                    : 'pending_payment';
 
         const orders = await query(
             'SELECT id, customer_id, items_json, coupon_code, payment_status, payment_method, total_local, currency, status FROM orders WHERE moyasar_invoice_id = ?',

@@ -244,8 +244,8 @@ function renderOverview(data) {
     tbody.innerHTML = data.recentOrders.slice(0, 5).map(o => `
         <tr>
             <td style="font-weight:700; color:var(--gold-light);">${o.order_number}</td>
-            <td>${o.customer_name}</td>
-            <td>${o.customer_country} - ${o.customer_city}</td>
+            <td>${escapeHtml(o.customer_name)}</td>
+            <td>${escapeHtml(o.customer_country)} - ${escapeHtml(o.customer_city)}</td>
             <td style="font-weight:700;">${o.total_local} ${o.currency}</td>
             <td>${o.payment_method === 'cod' ? 'الدفع عند الاستلام' : 'بطاقة بنكية'}</td>
             <td><span class="badge badge-${o.status}">${getStatusLabel(o.status)}</span></td>
@@ -268,10 +268,10 @@ function renderOrders(orders) {
         return `
             <tr>
                 <td style="font-weight:700; color:var(--gold-light);">${o.order_number}</td>
-                <td>${o.customer_name}</td>
-                <td style="direction:ltr; text-align:right;">${o.customer_phone}</td>
-                <td>${o.customer_country}، ${o.customer_city}</td>
-                <td style="font-size:0.82rem; color:var(--text-secondary); max-width: 220px;">${itemsList}</td>
+                <td>${escapeHtml(o.customer_name)}</td>
+                <td style="direction:ltr; text-align:right;">${escapeHtml(o.customer_phone)}</td>
+                <td>${escapeHtml(o.customer_country)}، ${escapeHtml(o.customer_city)}</td>
+                <td style="font-size:0.82rem; color:var(--text-secondary); max-width: 220px;">${escapeHtml(itemsList)}</td>
                 <td style="font-weight:700; color:var(--gold-light);">${o.total_local} ${o.currency}</td>
                 <td>
                     <select class="status-select" data-lumiere-change="updateOrderStatus(${o.id}, this.value)">
@@ -302,9 +302,11 @@ async function deleteOrder(orderId) {
         const data = await res.json();
         if (data.success) {
             loadAllData();
+        } else {
+            alert(data.message || 'فشل حذف الطلب');
         }
     } catch (err) {
-        alert('فشل حذف الطلب');
+        alert('حدث خطأ أثناء الاتصال بالخادم');
     }
 }
 
