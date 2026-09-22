@@ -956,8 +956,21 @@ router.patch('/admin/orders/:id/status', requireAdmin, async (req, res) => {
 // Admin Delete Order
 router.delete('/admin/orders/:id', requireAdmin, async (req, res) => {
     try {
-        return res.status(405).json({ success: false, message: 'حذف الطلبات المالية غير مسموح؛ استخدم الإلغاء والأرشفة' });
+        const orderId = req.params.id;
+        const orders = await query('SELECT status FROM orders WHERE id = ?', [orderId]);
+        
+        if (orders.length === 0) {
+            return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
+        }
+        
+        if (orders[0].status !== 'cancelled') {
+            return res.status(400).json({ success: false, message: 'يرجى تغيير حالة الطلب إلى "ملغي ✕" أولاً لاسترجاع المخزون قبل الحذف' });
+        }
+        
+        await run('DELETE FROM orders WHERE id = ?', [orderId]);
+        res.json({ success: true, message: 'تم حذف الطلب نهائياً' });
     } catch (err) {
+        console.error('Delete order error:', err);
         res.status(500).json({ success: false, message: 'فشل الحذف' });
     }
 });
